@@ -6,7 +6,7 @@ provider "azurerm" {
 # Create resource group
 resource "azurerm_resource_group" "example" {
   name     = "Test-RG"
-  location = "East US"  # Specify the desired location
+  location = "East US" # Specify the desired location
 }
 
 
