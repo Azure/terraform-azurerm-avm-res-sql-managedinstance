@@ -43,10 +43,15 @@ The following providers are used by this module:
 The following resources are used by this module:
 
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
+- [azurerm_mssql_managed_database.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_database) (resource)
+- [azurerm_mssql_managed_instance.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance) (resource)
+- [azurerm_mssql_managed_instance_active_directory_administrator.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_active_directory_administrator) (resource)
+- [azurerm_mssql_managed_instance_security_alert_policy.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_security_alert_policy) (resource)
+- [azurerm_mssql_managed_instance_transparent_data_encryption.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_transparent_data_encryption) (resource)
+- [azurerm_mssql_managed_instance_vulnerability_assessment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_vulnerability_assessment) (resource)
 - [azurerm_private_endpoint.this_managed_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint.this_unmanaged_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint_application_security_group_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint_application_security_group_association) (resource)
-- [azurerm_resource_group.TODO](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_resource_group_template_deployment.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group_template_deployment) (resource)
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [random_id.telem](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) (resource)
@@ -55,6 +60,24 @@ The following resources are used by this module:
 ## Required Inputs
 
 The following input variables are required:
+
+### <a name="input_administrator_login"></a> [administrator\_login](#input\_administrator\_login)
+
+Description: (Required) The administrator login name for the new SQL Managed Instance. Changing this forces a new resource to be created.
+
+Type: `string`
+
+### <a name="input_administrator_login_password"></a> [administrator\_login\_password](#input\_administrator\_login\_password)
+
+Description: (Required) The password associated with the `administrator_login` user. Needs to comply with Azure's [Password Policy](https://msdn.microsoft.com/library/ms161959.aspx)
+
+Type: `string`
+
+### <a name="input_license_type"></a> [license\_type](#input\_license\_type)
+
+Description: (Required) What type of license the Managed Instance will use. Possible values are `LicenseIncluded` and `BasePrice`.
+
+Type: `string`
 
 ### <a name="input_location"></a> [location](#input\_location)
 
@@ -74,9 +97,74 @@ Description: The resource group where the resources will be deployed.
 
 Type: `string`
 
+### <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name)
+
+Description: (Required) Specifies the SKU Name for the SQL Managed Instance. Valid values include `GP_Gen4`, `GP_Gen5`, `GP_Gen8IM`, `GP_Gen8IH`, `BC_Gen4`, `BC_Gen5`, `BC_Gen8IM` or `BC_Gen8IH`.
+
+Type: `string`
+
+### <a name="input_storage_size_in_gb"></a> [storage\_size\_in\_gb](#input\_storage\_size\_in\_gb)
+
+Description: (Required) Maximum storage space for the SQL Managed instance. This should be a multiple of 32 (GB).
+
+Type: `number`
+
+### <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id)
+
+Description: (Required) The subnet resource id that the SQL Managed Instance will be associated with. Changing this forces a new resource to be created.
+
+Type: `string`
+
+### <a name="input_vcores"></a> [vcores](#input\_vcores)
+
+Description: (Required) Number of cores that should be assigned to the SQL Managed Instance. Values can be `8`, `16`, or `24` for Gen4 SKUs, or `4`, `6`, `8`, `10`, `12`, `16`, `20`, `24`, `32`, `40`, `48`, `56`, `64`, `80`, `96` or `128` for Gen5 SKUs.
+
+Type: `number`
+
 ## Optional Inputs
 
 The following input variables are optional (have default values):
+
+### <a name="input_active_directory_administrator"></a> [active\_directory\_administrator](#input\_active\_directory\_administrator)
+
+Description: - `azuread_authentication_only` - (Optional) When `true`, only permit logins from AAD users and administrators. When `false`, also allow local database users.
+- `login_username` - (Required) The login name of the principal to set as the Managed Instance Administrator.
+- `object_id` - (Required) The Object ID of the principal to set as the Managed Instance Administrator.
+- `tenant_id` - (Required) The Azure Active Directory Tenant ID.
+
+---
+`timeouts` block supports the following:
+- `create` - (Defaults to 30 minutes) Used when creating the SQL Active Directory Administrator.
+- `delete` - (Defaults to 30 minutes) Used when deleting the SQL Active Directory Administrator.
+- `read` - (Defaults to 5 minutes) Used when retrieving the SQL Active Directory Administrator.
+- `update` - (Defaults to 30 minutes) Used when updating the SQL Active Directory Administrator.
+
+Type:
+
+```hcl
+object({
+    azuread_authentication_only = optional(bool)
+    login_username              = optional(string)
+    object_id                   = optional(string)
+    tenant_id                   = optional(string)
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+```
+
+Default: `{}`
+
+### <a name="input_collation"></a> [collation](#input\_collation)
+
+Description: (Optional) Specifies how the SQL Managed Instance will be collated. Default value is `SQL_Latin1_General_CP1_CI_AS`. Changing this forces a new resource to be created.
+
+Type: `string`
+
+Default: `null`
 
 ### <a name="input_customer_managed_key"></a> [customer\_managed\_key](#input\_customer\_managed\_key)
 
@@ -101,6 +189,57 @@ object({
 ```
 
 Default: `null`
+
+### <a name="input_databases"></a> [databases](#input\_databases)
+
+Description: - `name` - (Required) The name of the Managed Database to create. Changing this forces a new resource to be created.
+- `short_term_retention_days` - (Optional) The backup retention period in days. This is how many days Point-in-Time Restore will be supported.
+
+---
+`long_term_retention_policy` block supports the following:
+- `monthly_retention` - (Optional) The monthly retention policy for an LTR backup in an ISO 8601 format. Valid value is between 1 to 120 months. e.g. `P1Y`, `P1M`, `P4W` or `P30D`.
+- `week_of_year` - (Optional) The week of year to take the yearly backup. Value has to be between `1` and `52`.
+- `weekly_retention` - (Optional) The weekly retention policy for an LTR backup in an ISO 8601 format. Valid value is between 1 to 520 weeks. e.g. `P1Y`, `P1M`, `P1W` or `P7D`.
+- `yearly_retention` - (Optional) The yearly retention policy for an LTR backup in an ISO 8601 format. Valid value is between 1 to 10 years. e.g. `P1Y`, `P12M`, `P52W` or `P365D`.
+
+---
+`point_in_time_restore` block supports the following:
+- `restore_point_in_time` - (Required) The point in time for the restore from `source_database_id`. Changing this forces a new resource to be created.
+- `source_database_id` - (Required) The source database id that will be used to restore from. Changing this forces a new resource to be created.
+
+---
+`timeouts` block supports the following:
+- `create` - (Defaults to 30 minutes) Used when creating the Mssql Managed Database.
+- `delete` - (Defaults to 30 minutes) Used when deleting the Mssql Managed Database.
+- `read` - (Defaults to 5 minutes) Used when retrieving the Mssql Managed Database.
+- `update` - (Defaults to 30 minutes) Used when updating the Mssql Managed Database.
+
+Type:
+
+```hcl
+map(object({
+    name                      = string
+    short_term_retention_days = optional(number)
+    long_term_retention_policy = optional(object({
+      monthly_retention = optional(string)
+      week_of_year      = optional(number)
+      weekly_retention  = optional(string)
+      yearly_retention  = optional(string)
+    }))
+    point_in_time_restore = optional(object({
+      restore_point_in_time = string
+      source_database_id    = string
+    }))
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  }))
+```
+
+Default: `{}`
 
 ### <a name="input_diagnostic_settings"></a> [diagnostic\_settings](#input\_diagnostic\_settings)
 
@@ -136,6 +275,14 @@ map(object({
 
 Default: `{}`
 
+### <a name="input_dns_zone_partner_id"></a> [dns\_zone\_partner\_id](#input\_dns\_zone\_partner\_id)
+
+Description: (Optional) The ID of the SQL Managed Instance which will share the DNS zone. This is a prerequisite for creating an `azurerm_sql_managed_instance_failover_group`. Setting this after creation forces a new resource to be created.
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
 Description: This variable controls whether or not telemetry is enabled for the module.  
@@ -164,6 +311,14 @@ object({
 
 Default: `null`
 
+### <a name="input_maintenance_configuration_name"></a> [maintenance\_configuration\_name](#input\_maintenance\_configuration\_name)
+
+Description: (Optional) The name of the Public Maintenance Configuration window to apply to the SQL Managed Instance. Valid values include `SQL_Default` or an Azure Location in the format `SQL_{Location}_MI_{Size}`(for example `SQL_EastUS_MI_1`). Defaults to `SQL_Default`.
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_managed_identities"></a> [managed\_identities](#input\_managed\_identities)
 
 Description: Controls the Managed Identity configuration on this resource. The following properties can be specified:
@@ -181,6 +336,14 @@ object({
 ```
 
 Default: `{}`
+
+### <a name="input_minimum_tls_version"></a> [minimum\_tls\_version](#input\_minimum\_tls\_version)
+
+Description: (Optional) The Minimum TLS Version. Default value is `1.2` Valid values include `1.0`, `1.1`, `1.2`.
+
+Type: `string`
+
+Default: `null`
 
 ### <a name="input_private_endpoints"></a> [private\_endpoints](#input\_private\_endpoints)
 
@@ -215,6 +378,7 @@ map(object({
       condition                              = optional(string, null)
       condition_version                      = optional(string, null)
       delegated_managed_identity_resource_id = optional(string, null)
+      principal_type                         = optional(string, null)
     })), {})
     lock = optional(object({
       kind = string
@@ -246,6 +410,22 @@ Type: `bool`
 
 Default: `true`
 
+### <a name="input_proxy_override"></a> [proxy\_override](#input\_proxy\_override)
+
+Description: (Optional) Specifies how the SQL Managed Instance will be accessed. Default value is `Default`. Valid values include `Default`, `Proxy`, and `Redirect`.
+
+Type: `string`
+
+Default: `null`
+
+### <a name="input_public_data_endpoint_enabled"></a> [public\_data\_endpoint\_enabled](#input\_public\_data\_endpoint\_enabled)
+
+Description: (Optional) Is the public data endpoint enabled? Default value is `false`.
+
+Type: `bool`
+
+Default: `null`
+
 ### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
 
 Description: A map of role assignments to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
@@ -270,10 +450,58 @@ map(object({
     condition                              = optional(string, null)
     condition_version                      = optional(string, null)
     delegated_managed_identity_resource_id = optional(string, null)
+    principal_type                         = optional(string, null)
   }))
 ```
 
 Default: `{}`
+
+### <a name="input_security_alert_policy"></a> [security\_alert\_policy](#input\_security\_alert\_policy)
+
+Description: - `disabled_alerts` - (Optional) Specifies an array of alerts that are disabled. Possible values are `Sql_Injection`, `Sql_Injection_Vulnerability`, `Access_Anomaly`, `Data_Exfiltration`, `Unsafe_Action` and `Brute_Force`.
+- `email_account_admins_enabled` - (Optional) Boolean flag which specifies if the alert is sent to the account administrators or not. Defaults to `false`.
+- `email_addresses` - (Optional) Specifies an array of email addresses to which the alert is sent.
+- `enabled` - (Optional) Specifies the state of the Security Alert Policy, whether it is enabled or disabled. Possible values are `true`, `false`.
+- `retention_days` - (Optional) Specifies the number of days to keep in the Threat Detection audit logs. Defaults to `0`.
+- `storage_account_access_key` - (Optional) Specifies the identifier key of the Threat Detection audit storage account. This is mandatory when you use `storage_endpoint` to specify a storage account blob endpoint.
+- `storage_endpoint` - (Optional) Specifies the blob storage endpoint (e.g. https://example.blob.core.windows.net). This blob storage will hold all Threat Detection audit logs.
+
+---
+`timeouts` block supports the following:
+- `create` - (Defaults to 30 minutes) Used when creating the MS SQL Managed Instance Security Alert Policy.
+- `delete` - (Defaults to 30 minutes) Used when deleting the MS SQL Managed Instance Security Alert Policy.
+- `read` - (Defaults to 5 minutes) Used when retrieving the MS SQL Managed Instance Security Alert Policy.
+- `update` - (Defaults to 30 minutes) Used when updating the MS SQL Managed Instance Security Alert Policy.
+
+Type:
+
+```hcl
+object({
+    disabled_alerts              = optional(set(string))
+    email_account_admins_enabled = optional(bool)
+    email_addresses              = optional(set(string))
+    enabled                      = optional(bool)
+    retention_days               = optional(number)
+    storage_account_access_key   = optional(string)
+    storage_endpoint             = optional(string)
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+```
+
+Default: `{}`
+
+### <a name="input_storage_account_type"></a> [storage\_account\_type](#input\_storage\_account\_type)
+
+Description: (Optional) Specifies the storage account type used to store backups for this database. Changing this forces a new resource to be created. Possible values are `GRS`, `LRS` and `ZRS`. Defaults to `GRS`.
+
+Type: `string`
+
+Default: `null`
 
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
@@ -282,6 +510,105 @@ Description: (Optional) Tags of the resource.
 Type: `map(string)`
 
 Default: `null`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: - `create` - (Defaults to 24 hours) Used when creating the Microsoft SQL Managed Instance.
+- `delete` - (Defaults to 24 hours) Used when deleting the Microsoft SQL Managed Instance.
+- `read` - (Defaults to 5 minutes) Used when retrieving the Microsoft SQL Managed Instance.
+- `update` - (Defaults to 24 hours) Used when updating the Microsoft SQL Managed Instance.
+
+Type:
+
+```hcl
+object({
+    create = optional(string)
+    delete = optional(string)
+    read   = optional(string)
+    update = optional(string)
+  })
+```
+
+Default: `null`
+
+### <a name="input_timezone_id"></a> [timezone\_id](#input\_timezone\_id)
+
+Description: (Optional) The TimeZone ID that the SQL Managed Instance will be operating in. Default value is `UTC`. Changing this forces a new resource to be created.
+
+Type: `string`
+
+Default: `null`
+
+### <a name="input_transparent_data_encryption"></a> [transparent\_data\_encryption](#input\_transparent\_data\_encryption)
+
+Description: - `auto_rotation_enabled` - (Optional) When enabled, the SQL Managed Instance will continuously check the key vault for any new versions of the key being used as the TDE protector. If a new version of the key is detected, the TDE protector on the SQL Managed Instance will be automatically rotated to the latest key version within 60 minutes.
+- `key_vault_key_id` - (Optional) To use customer managed keys from Azure Key Vault, provide the AKV Key ID. To use service managed keys, omit this field.
+
+---
+`timeouts` block supports the following:
+- `create` - (Defaults to 30 minutes) Used when creating the MSSQL.
+- `delete` - (Defaults to 30 minutes) Used when deleting the MSSQL.
+- `read` - (Defaults to 5 minutes) Used when retrieving the MSSQL.
+- `update` - (Defaults to 30 minutes) Used when updating the MSSQL.
+
+Type:
+
+```hcl
+object({
+    auto_rotation_enabled = optional(bool)
+    key_vault_key_id      = optional(string)
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+```
+
+Default: `{}`
+
+### <a name="input_vulnerability_assessment"></a> [vulnerability\_assessment](#input\_vulnerability\_assessment)
+
+Description: - `storage_account_access_key` - (Optional) Specifies the identifier key of the storage account for vulnerability assessment scan results. If `storage_container_sas_key` isn't specified, `storage_account_access_key` is required.
+- `storage_container_path` - (Required) A blob storage container path to hold the scan results (e.g. <https://myStorage.blob.core.windows.net/VaScans/>).
+- `storage_container_sas_key` - (Optional) A shared access signature (SAS Key) that has write access to the blob container specified in `storage_container_path` parameter. If `storage_account_access_key` isn't specified, `storage_container_sas_key` is required.
+
+---
+`recurring_scans` block supports the following:
+- `email_subscription_admins` - (Optional) Boolean flag which specifies if the schedule scan notification will be sent to the subscription administrators. Defaults to `true`.
+- `emails` - (Optional) Specifies an array of e-mail addresses to which the scan notification is sent.
+- `enabled` - (Optional) Boolean flag which specifies if recurring scans is enabled or disabled. Defaults to `false`.
+
+---
+`timeouts` block supports the following:
+- `create` - (Defaults to 60 minutes) Used when creating the Vulnerability Assessment.
+- `delete` - (Defaults to 60 minutes) Used when deleting the Vulnerability Assessment.
+- `read` - (Defaults to 5 minutes) Used when retrieving the Vulnerability Assessment.
+- `update` - (Defaults to 60 minutes) Used when updating the Vulnerability Assessment.
+
+Type:
+
+```hcl
+object({
+    storage_account_access_key = optional(string)
+    storage_container_path     = optional(string)
+    storage_container_sas_key  = optional(string)
+    recurring_scans = optional(object({
+      email_subscription_admins = optional(bool)
+      emails                    = optional(list(string))
+      enabled                   = optional(bool)
+    }))
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+```
+
+Default: `{}`
 
 ## Outputs
 
@@ -294,6 +621,10 @@ Description:   A map of the private endpoints created.
 ### <a name="output_resource"></a> [resource](#output\_resource)
 
 Description: This is the full output for the resource.
+
+### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
+
+Description: This is the resource ID of the resource.
 
 ## Modules
 

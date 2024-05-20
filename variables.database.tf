@@ -42,5 +42,6 @@ variable "databases" {
  - `read` - (Defaults to 5 minutes) Used when retrieving the Mssql Managed Database.
  - `update` - (Defaults to 30 minutes) Used when updating the Mssql Managed Database.
 DESCRIPTION
+  default     = {}
   nullable    = false
 }

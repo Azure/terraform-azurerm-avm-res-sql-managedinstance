@@ -128,5 +128,111 @@ variable "transparent_data_encryption" {
  - `read` - (Defaults to 5 minutes) Used when retrieving the MSSQL.
  - `update` - (Defaults to 30 minutes) Used when updating the MSSQL.
 DESCRIPTION
+  default     = {}
+  nullable    = false
+}
+
+variable "active_directory_administrator" {
+  type = object({
+    azuread_authentication_only = optional(bool)
+    login_username              = optional(string)
+    object_id                   = optional(string)
+    tenant_id                   = optional(string)
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+  description = <<-DESCRIPTION
+ - `azuread_authentication_only` - (Optional) When `true`, only permit logins from AAD users and administrators. When `false`, also allow local database users.
+ - `login_username` - (Required) The login name of the principal to set as the Managed Instance Administrator.
+ - `object_id` - (Required) The Object ID of the principal to set as the Managed Instance Administrator.
+ - `tenant_id` - (Required) The Azure Active Directory Tenant ID.
+
+ ---
+ `timeouts` block supports the following:
+ - `create` - (Defaults to 30 minutes) Used when creating the SQL Active Directory Administrator.
+ - `delete` - (Defaults to 30 minutes) Used when deleting the SQL Active Directory Administrator.
+ - `read` - (Defaults to 5 minutes) Used when retrieving the SQL Active Directory Administrator.
+ - `update` - (Defaults to 30 minutes) Used when updating the SQL Active Directory Administrator.
+DESCRIPTION
+  default     = {}
+  nullable    = false
+}
+
+variable "security_alert_policy" {
+  type = object({
+    disabled_alerts              = optional(set(string))
+    email_account_admins_enabled = optional(bool)
+    email_addresses              = optional(set(string))
+    enabled                      = optional(bool)
+    retention_days               = optional(number)
+    storage_account_access_key   = optional(string)
+    storage_endpoint             = optional(string)
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+  description = <<-DESCRIPTION
+ - `disabled_alerts` - (Optional) Specifies an array of alerts that are disabled. Possible values are `Sql_Injection`, `Sql_Injection_Vulnerability`, `Access_Anomaly`, `Data_Exfiltration`, `Unsafe_Action` and `Brute_Force`.
+ - `email_account_admins_enabled` - (Optional) Boolean flag which specifies if the alert is sent to the account administrators or not. Defaults to `false`.
+ - `email_addresses` - (Optional) Specifies an array of email addresses to which the alert is sent.
+ - `enabled` - (Optional) Specifies the state of the Security Alert Policy, whether it is enabled or disabled. Possible values are `true`, `false`.
+ - `retention_days` - (Optional) Specifies the number of days to keep in the Threat Detection audit logs. Defaults to `0`.
+ - `storage_account_access_key` - (Optional) Specifies the identifier key of the Threat Detection audit storage account. This is mandatory when you use `storage_endpoint` to specify a storage account blob endpoint.
+ - `storage_endpoint` - (Optional) Specifies the blob storage endpoint (e.g. https://example.blob.core.windows.net). This blob storage will hold all Threat Detection audit logs.
+
+ ---
+ `timeouts` block supports the following:
+ - `create` - (Defaults to 30 minutes) Used when creating the MS SQL Managed Instance Security Alert Policy.
+ - `delete` - (Defaults to 30 minutes) Used when deleting the MS SQL Managed Instance Security Alert Policy.
+ - `read` - (Defaults to 5 minutes) Used when retrieving the MS SQL Managed Instance Security Alert Policy.
+ - `update` - (Defaults to 30 minutes) Used when updating the MS SQL Managed Instance Security Alert Policy.
+DESCRIPTION
+  default     = {}
+  nullable    = false
+}
+
+variable "vulnerability_assessment" {
+  type = object({
+    storage_account_access_key = optional(string)
+    storage_container_path     = optional(string)
+    storage_container_sas_key  = optional(string)
+    recurring_scans = optional(object({
+      email_subscription_admins = optional(bool)
+      emails                    = optional(list(string))
+      enabled                   = optional(bool)
+    }))
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+  description = <<-DESCRIPTION
+ - `storage_account_access_key` - (Optional) Specifies the identifier key of the storage account for vulnerability assessment scan results. If `storage_container_sas_key` isn't specified, `storage_account_access_key` is required.
+ - `storage_container_path` - (Required) A blob storage container path to hold the scan results (e.g. <https://myStorage.blob.core.windows.net/VaScans/>).
+ - `storage_container_sas_key` - (Optional) A shared access signature (SAS Key) that has write access to the blob container specified in `storage_container_path` parameter. If `storage_account_access_key` isn't specified, `storage_container_sas_key` is required.
+
+ ---
+ `recurring_scans` block supports the following:
+ - `email_subscription_admins` - (Optional) Boolean flag which specifies if the schedule scan notification will be sent to the subscription administrators. Defaults to `true`.
+ - `emails` - (Optional) Specifies an array of e-mail addresses to which the scan notification is sent.
+ - `enabled` - (Optional) Boolean flag which specifies if recurring scans is enabled or disabled. Defaults to `false`.
+
+ ---
+ `timeouts` block supports the following:
+ - `create` - (Defaults to 60 minutes) Used when creating the Vulnerability Assessment.
+ - `delete` - (Defaults to 60 minutes) Used when deleting the Vulnerability Assessment.
+ - `read` - (Defaults to 5 minutes) Used when retrieving the Vulnerability Assessment.
+ - `update` - (Defaults to 60 minutes) Used when updating the Vulnerability Assessment.
+DESCRIPTION
+  default     = {}
   nullable    = false
 }
