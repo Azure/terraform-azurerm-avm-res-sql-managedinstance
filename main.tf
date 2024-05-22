@@ -79,7 +79,7 @@ resource "azurerm_mssql_managed_instance_security_alert_policy" "this" {
 }
 
 resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
-  managed_instance_id   = var.transparent_data_encryption.managed_instance_id
+  managed_instance_id   = azurerm_mssql_managed_instance.this.id
   auto_rotation_enabled = var.transparent_data_encryption.auto_rotation_enabled
   key_vault_key_id      = var.transparent_data_encryption.key_vault_key_id
 
