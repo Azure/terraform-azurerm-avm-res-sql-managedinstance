@@ -62,7 +62,7 @@ variable "maintenance_configuration_name" {
 
 variable "minimum_tls_version" {
   type        = string
-  default     = null
+  default     = "1.2"
   description = "(Optional) The Minimum TLS Version. Default value is `1.2` Valid values include `1.0`, `1.1`, `1.2`."
 }
 
@@ -235,4 +235,10 @@ variable "vulnerability_assessment" {
 DESCRIPTION
   default     = {}
   nullable    = false
+}
+
+variable "zone_redundant_enabled" {
+  type        = bool
+  default     = true
+  description = "(Optional) If true, the SQL Managed Instance will be deployed with zone redundancy.  Defaults to `true`."
 }

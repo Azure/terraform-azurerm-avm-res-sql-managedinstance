@@ -1,16 +1,7 @@
 <!-- BEGIN_TF_DOCS -->
-# terraform-azurerm-avm-template
+# AVM module for SQL Managed Instance
 
-This is a template repo for Terraform Azure Verified Modules.
-
-Things to do:
-
-1. Set up a GitHub repo environment called `test`.
-1. Configure environment protection rule to ensure that approval is required before deploying to this environment.
-1. Create a user-assigned managed identity in your test subscription.
-1. Create a role assignment for the managed identity on your test subscription, use the minimum required role.
-1. Configure federated identity credentials on the user assigned managed identity. Use the GitHub environment.
-1. Search and update TODOs within the code and remove the TODO comments once complete.
+This is an Azure Verified Modules for SQL Managed Instances.
 
 > [!IMPORTANT]
 > As the overall AVM framework is not GA (generally available) yet - the CI framework and test automation is not fully functional and implemented across all supported languages yet - breaking changes are expected, and additional customer feedback is yet to be gathered and incorporated. Hence, modules **MUST NOT** be published at version `1.0.0` or higher at this time.
@@ -343,7 +334,7 @@ Description: (Optional) The Minimum TLS Version. Default value is `1.2` Valid va
 
 Type: `string`
 
-Default: `null`
+Default: `"1.2"`
 
 ### <a name="input_private_endpoints"></a> [private\_endpoints](#input\_private\_endpoints)
 
@@ -609,6 +600,14 @@ object({
 ```
 
 Default: `{}`
+
+### <a name="input_zone_redundant_enabled"></a> [zone\_redundant\_enabled](#input\_zone\_redundant\_enabled)
+
+Description: (Optional) If true, the SQL Managed Instance will be deployed with zone redundancy.  Defaults to `true`.
+
+Type: `bool`
+
+Default: `true`
 
 ## Outputs
 
