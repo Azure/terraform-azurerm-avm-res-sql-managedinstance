@@ -39,7 +39,7 @@ resource "azurerm_mssql_managed_instance" "this" {
 }
 
 resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" {
-  count = var.active_directory_administrator != {} ? 1 : 0
+  count = var.active_directory_administrator == {} ? 0 : 1
 
   login_username              = var.active_directory_administrator.login_username
   managed_instance_id         = azurerm_mssql_managed_instance.this.id
@@ -59,7 +59,7 @@ resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" 
 }
 
 resource "azurerm_mssql_managed_instance_security_alert_policy" "this" {
-  count = var.security_alert_policy != {} ? 1 : 0
+  count = var.security_alert_policy == {} ? 0 : 1
 
   managed_instance_name        = azurerm_mssql_managed_instance.this.name
   resource_group_name          = var.resource_group_name
@@ -83,7 +83,7 @@ resource "azurerm_mssql_managed_instance_security_alert_policy" "this" {
 }
 
 resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
-  count = var.transparent_data_encryption != {} ? 1 : 0
+  count = var.transparent_data_encryption == {} ? 0 : 1
 
   managed_instance_id   = azurerm_mssql_managed_instance.this.id
   auto_rotation_enabled = var.transparent_data_encryption.auto_rotation_enabled
@@ -101,7 +101,7 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
 }
 
 resource "azurerm_mssql_managed_instance_vulnerability_assessment" "this" {
-  count = var.vulnerability_assessment != {} ? 1 : 0
+  count = var.vulnerability_assessment == {} ? 0 : 1
 
   managed_instance_id        = azurerm_mssql_managed_instance.this.id
   storage_container_path     = var.vulnerability_assessment.storage_container_path
