@@ -101,7 +101,7 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
 }
 
 resource "azurerm_mssql_managed_instance_vulnerability_assessment" "this" {
-  count = try(var.vulnerability_assessment.storage_container_path, null) == null ? 0 : 1
+  count = var.vulnerability_assessment == {} ? 0 : 1
 
   managed_instance_id        = azurerm_mssql_managed_instance.this.id
   storage_container_path     = var.vulnerability_assessment.storage_container_path
