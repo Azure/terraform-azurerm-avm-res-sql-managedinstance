@@ -109,13 +109,11 @@ resource "azapi_resource" "mssql_managed_instance_vulnerability_assessment" {
   body = {
     properties = {
       storageContainerPath = var.vulnerability_assessment.storage_container_path
-      recurringScans = try(var.vulnerability_assessment.recurring_scans, null) != null ? [
-        for scan in var.vulnerability_assessment.recurring_scans : {
-          emailSubscriptionAdmins = scan.email_subscription_admins
-          emails                  = scan.emails
-          isEnabled               = scan.enabled
-        }
-      ] : null
+      recurringScans = try(var.vulnerability_assessment.recurring_scans, null) != null ? {
+        emailSubscriptionAdmins = scan.email_subscription_admins
+        emails                  = scan.emails
+        isEnabled               = scan.enabled
+      } : null
       storageAccountAccessKey = var.vulnerability_assessment.storage_account_access_key
       storageContainerSasKey  = var.vulnerability_assessment.storage_container_sas_key
     }
