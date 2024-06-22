@@ -16,3 +16,7 @@ output "resource_id" {
   description = "This is the resource ID of the resource."
   value       = azurerm_mssql_managed_instance.this.id
 }
+
+output "identity" {
+  value = data.azapi_resource.identity.output.properties.identity
+}

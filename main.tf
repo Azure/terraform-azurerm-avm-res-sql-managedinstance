@@ -175,3 +175,16 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   }
 }
 
+data "azurerm_resource_group" "parent" {
+  name = azurerm_mssql_managed_instance.this.resource_group_name
+}
+
+data "azapi_resource" "identity" {
+  name      = azurerm_mssql_managed_instance.this.name
+  parent_id = data.azurerm_resource_group.parent.id
+  type      = "Microsoft.Sql/managedInstances@2021-11-01-preview"
+
+  response_export_values = ["identity"]
+
+  depends_on = [azapi_resource_action.sql_managed_instance_patch_identities]
+}
