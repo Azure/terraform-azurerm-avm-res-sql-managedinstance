@@ -59,25 +59,23 @@ resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" 
   }
 }
 
-resource "azapi_resource" "mssql_managed_instance_security_alert_policy" {
+resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" {
   count = var.security_alert_policy == {} ? 0 : 1
 
-  type                      = "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-05-01-preview"
-  name                      = "Default"
-  parent_id                 = azurerm_mssql_managed_instance.this.id
-  schema_validation_enabled = true
-
-  body = jsonencode({
+  type        = "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-05-01-preview"
+  resource_id = azurerm_mssql_managed_instance.this.id
+  method      = "PUT"
+  body = {
     properties = {
-      state                   = var.security_alert_policy.enabled ? "Enabled" : "Disabled"
-      disabledAlerts          = var.security_alert_policy.disabled_alerts
-      emailAccountAdmins      = var.security_alert_policy.email_account_admins_enabled
-      emailAddresses          = var.security_alert_policy.email_addresses
-      retentionDays           = var.security_alert_policy.retention_days
-      storageAccountAccessKey = var.security_alert_policy.storage_account_access_key
-      storageEndpoint         = var.security_alert_policy.storage_endpoint
+      disabledAlerts          = try(var.security_alert_policy.disabled_alerts, [])
+      emailAccountAdmins      = try(var.security_alert_policy.email_account_admins_enabled, false)
+      emailAddresses          = try(var.security_alert_policy.email_addresses, [])
+      retentionDays           = try(var.security_alert_policy.retention_days, 0)
+      state                   = try(var.security_alert_policy.enabled, "Enabled")
+      storageAccountAccessKey = try(var.security_alert_policy.storage_account_access_key, null)
+      storageEndpoint         = try(var.security_alert_policy.storage_endpoint, null)
     }
-  })
+  }
 }
 
 resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
@@ -98,24 +96,22 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
   }
 }
 
-resource "azapi_resource" "mssql_managed_instance_vulnerability_assessment" {
+resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessment" {
   count = var.vulnerability_assessment == {} ? 0 : 1
 
-  type                      = "Microsoft.Sql/managedInstances/vulnerabilityAssessments@2023-05-01-preview"
-  name                      = "default"
-  parent_id                 = azurerm_mssql_managed_instance.this.id
-  schema_validation_enabled = true
-
+  type        = "Microsoft.Sql/servers/vulnerabilityAssessments@2023-05-01-preview"
+  resource_id = azurerm_mssql_managed_instance.this.id
+  method      = "PUT"
   body = {
     properties = {
-      storageContainerPath = var.vulnerability_assessment.storage_container_path
+      storageAccountAccessKey = try(var.vulnerability_assessment.storage_account_access_key, null)
+      storageContainerPath    = try(var.vulnerability_assessment.storage_container_path, null)
+      storageContainerSasKey  = try(var.vulnerability_assessment.storage_container_sas_key, null)
       recurringScans = var.vulnerability_assessment.recurring_scans != {} ? {
-        emailSubscriptionAdmins = var.vulnerability_assessment.recurring_scans.email_subscription_admins
-        emails                  = var.vulnerability_assessment.recurring_scans.emails
-        isEnabled               = var.vulnerability_assessment.recurring_scans.enabled
+        isEnabled               = try(var.vulnerability_assessment.recurring_scans.enabled, true)
+        emailSubscriptionAdmins = try(var.vulnerability_assessment.recurring_scans.email_subscription_admins, true),
+        emails                  = try(var.vulnerability_assessment.recurring_scans.emails, [])
       } : null
-      storageAccountAccessKey = var.vulnerability_assessment.storage_account_access_key
-      storageContainerSasKey  = var.vulnerability_assessment.storage_container_sas_key
     }
   }
 }
