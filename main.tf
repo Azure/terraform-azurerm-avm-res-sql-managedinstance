@@ -122,33 +122,6 @@ resource "azapi_resource" "mssql_managed_instance_vulnerability_assessment" {
   }
 }
 
-resource "azurerm_mssql_managed_instance_vulnerability_assessment" "this" {
-  count = var.vulnerability_assessment == {} ? 0 : 1
-
-  managed_instance_id        = azurerm_mssql_managed_instance.this.id
-  storage_container_path     = var.vulnerability_assessment.storage_container_path
-  storage_account_access_key = var.vulnerability_assessment.storage_account_access_key
-  storage_container_sas_key  = var.vulnerability_assessment.storage_container_sas_key
-
-  dynamic "recurring_scans" {
-    for_each = var.vulnerability_assessment.recurring_scans == null ? [] : [var.vulnerability_assessment.recurring_scans]
-    content {
-      email_subscription_admins = recurring_scans.value.email_subscription_admins
-      emails                    = recurring_scans.value.emails
-      enabled                   = recurring_scans.value.enabled
-    }
-  }
-  dynamic "timeouts" {
-    for_each = var.vulnerability_assessment.timeouts == null ? [] : [var.vulnerability_assessment.timeouts]
-    content {
-      create = timeouts.value.create
-      delete = timeouts.value.delete
-      read   = timeouts.value.read
-      update = timeouts.value.update
-    }
-  }
-}
-
 # # this appear to be required for vulnerability assessments to function
 # resource "azurerm_role_assignment" "sqlmi-system_assigned" {
 #   scope                = var.storage_account_resource_id
