@@ -166,11 +166,11 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
     identity = {
       type = local.managed_identities.system_assigned_user_assigned.this.type
       userAssignedIdentities = {
-        for id in local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids : id => {}
+        for id in tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) : id => {}
       }
     },
     properties = {
-      primaryUserAssignedIdentityId = length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids[0] : null
+      primaryUserAssignedIdentityId = length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0] : null
     }
   }
 }
