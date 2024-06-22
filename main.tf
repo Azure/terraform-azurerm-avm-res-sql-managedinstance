@@ -72,7 +72,7 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
       emailAccountAdmins      = try(var.security_alert_policy.email_account_admins_enabled, false)
       emailAddresses          = try(var.security_alert_policy.email_addresses, [])
       retentionDays           = try(var.security_alert_policy.retention_days, 0)
-      state                   = try(var.security_alert_policy.enabled, "Enabled")
+      state                   = try(var.security_alert_policy.enabled ? "Enabled" : "Disabled", "Enabled")
       storageAccountAccessKey = try(var.security_alert_policy.storage_account_access_key, null)
       storageEndpoint         = try(var.security_alert_policy.storage_endpoint, null)
     }
