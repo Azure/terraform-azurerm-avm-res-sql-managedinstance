@@ -159,7 +159,7 @@ resource "azurerm_role_assignment" "this" {
 # https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
 resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   count       = local.managed_identities.system_assigned_user_assigned == {} ? 0 : 1
-  type        = "Microsoft.Sql/managedInstances@2021-11-01-preview"
+  type        = "Microsoft.Sql/managedInstances@2023-05-01-preview"
   resource_id = azurerm_mssql_managed_instance.this.id
   method      = "PATCH"
   body = {
@@ -182,7 +182,7 @@ data "azurerm_resource_group" "parent" {
 data "azapi_resource" "identity" {
   name      = azurerm_mssql_managed_instance.this.name
   parent_id = data.azurerm_resource_group.parent.id
-  type      = "Microsoft.Sql/managedInstances@2021-11-01-preview"
+  type      = "Microsoft.Sql/managedInstances@2023-05-01-preview"
 
   response_export_values = ["identity"]
 
