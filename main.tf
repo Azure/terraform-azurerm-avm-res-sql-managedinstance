@@ -19,14 +19,6 @@ resource "azurerm_mssql_managed_instance" "this" {
   tags                           = var.tags
   timezone_id                    = var.timezone_id
 
-  ## Resources supporting both SystemAssigned and UserAssigned
-  dynamic "identity" {
-    for_each = local.managed_identities.system_assigned_user_assigned
-    content {
-      type         = identity.value.type
-      identity_ids = identity.value.user_assigned_resource_ids
-    }
-  }
   dynamic "timeouts" {
     for_each = var.timeouts == null ? [] : [var.timeouts]
     content {
@@ -42,8 +34,7 @@ resource "azurerm_mssql_managed_instance" "this" {
   # https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
   lifecycle {
     ignore_changes = [
-      identity,
-      primary_user_assigned_identity_id
+      identity
     ]
   }
 }
@@ -169,7 +160,7 @@ resource "azurerm_role_assignment" "this" {
 resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   count       = local.managed_identities.system_assigned_user_assigned == {} ? 0 : 1
   type        = "Microsoft.Sql/managedInstances@2021-11-01-preview"
-  resource_id = azurerm_sql_managed_instance.sql_managed_instance.id
+  resource_id = azurerm_mssql_managed_instance.this.id
   method      = "PATCH"
   body = {
     identity = {
