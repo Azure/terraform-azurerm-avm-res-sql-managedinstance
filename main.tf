@@ -59,11 +59,12 @@ resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" 
   }
 }
 
+# https://learn.microsoft.com/en-us/rest/api/sql/managed-server-security-alert-policies/create-or-update?view=rest-sql-2023-08-01-preview&tabs=HTTP
 resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" {
   count = var.security_alert_policy == {} ? 0 : 1
 
-  type        = "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-05-01-preview"
-  resource_id = azurerm_mssql_managed_instance.this.id
+  type        = "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-08-01-preview"
+  resource_id = "${azurerm_mssql_managed_instance.this.id}/securityAlertPolicies/Default"
   method      = "PUT"
   body = {
     properties = {
@@ -96,11 +97,12 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
   }
 }
 
+# https://learn.microsoft.com/en-us/rest/api/sql/managed-instance-vulnerability-assessments/create-or-update?view=rest-sql-2023-08-01-preview&tabs=HTTP
 resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessment" {
   count = var.vulnerability_assessment == {} ? 0 : 1
 
-  type        = "Microsoft.Sql/servers/vulnerabilityAssessments@2023-05-01-preview"
-  resource_id = azurerm_mssql_managed_instance.this.id
+  type        = "Microsoft.Sql/managedInstances/vulnerabilityAssessments@2023-08-01-preview"
+  resource_id = "${azurerm_mssql_managed_instance.this.id}/vulnerabilityAssessments/default"
   method      = "PUT"
   body = {
     properties = {
