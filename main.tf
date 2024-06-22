@@ -63,7 +63,7 @@ resource "azapi_resource" "mssql_managed_instance_security_alert_policy" {
   count = var.security_alert_policy == {} ? 0 : 1
 
   type                      = "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-05-01-preview"
-  name                      = "${azurerm_mssql_managed_instance.this.name}/default"
+  name                      = "Default"
   parent_id                 = azurerm_mssql_managed_instance.this.id
   schema_validation_enabled = true
 
