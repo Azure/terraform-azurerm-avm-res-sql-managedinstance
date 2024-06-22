@@ -36,6 +36,16 @@ resource "azurerm_mssql_managed_instance" "this" {
       update = timeouts.value.update
     }
   }
+
+  # identity is done via an azapi_resource_action further on, because of this bug that
+  # prevents system & user assigned identities being set at the same time.
+  # https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
+  lifecycle {
+    ignore_changes = [
+      identity,
+      primary_user_assigned_identity_id
+    ]
+  }
 }
 
 resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" {
@@ -152,3 +162,25 @@ resource "azurerm_role_assignment" "this" {
   role_definition_name                   = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? null : each.value.role_definition_id_or_name
   skip_service_principal_aad_check       = each.value.skip_service_principal_aad_check
 }
+
+# identity is done via an azapi_resource_action further on, because of this bug that
+# prevents system & user assigned identities being set at the same time.
+# https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
+resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
+  count       = local.managed_identities.system_assigned_user_assigned == {} ? 0 : 1
+  type        = "Microsoft.Sql/managedInstances@2021-11-01-preview"
+  resource_id = azurerm_sql_managed_instance.sql_managed_instance.id
+  method      = "PATCH"
+  body = {
+    identity = {
+      type = local.managed_identities.system_assigned_user_assigned.this.type
+      userAssignedIdentities = {
+        for id in local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids : id => {}
+      }
+    },
+    properties = {
+      primaryUserAssignedIdentityId = length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids[0] : null
+    }
+  }
+}
+
