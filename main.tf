@@ -59,28 +59,25 @@ resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" 
   }
 }
 
-resource "azurerm_mssql_managed_instance_security_alert_policy" "this" {
+resource "azapi_resource" "mssql_managed_instance_security_alert_policy" {
   count = var.security_alert_policy == {} ? 0 : 1
 
-  managed_instance_name        = azurerm_mssql_managed_instance.this.name
-  resource_group_name          = var.resource_group_name
-  disabled_alerts              = var.security_alert_policy.disabled_alerts
-  email_account_admins_enabled = var.security_alert_policy.email_account_admins_enabled
-  email_addresses              = var.security_alert_policy.email_addresses
-  enabled                      = var.security_alert_policy.enabled
-  retention_days               = var.security_alert_policy.retention_days
-  storage_account_access_key   = var.security_alert_policy.storage_account_access_key
-  storage_endpoint             = var.security_alert_policy.storage_endpoint
+  type                      = "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-05-01-preview"
+  name                      = "${azurerm_mssql_managed_instance.this.name}/default"
+  parent_id                 = azurerm_mssql_managed_instance.this.id
+  schema_validation_enabled = true
 
-  dynamic "timeouts" {
-    for_each = var.security_alert_policy.timeouts == null ? [] : [var.security_alert_policy.timeouts]
-    content {
-      create = timeouts.value.create
-      delete = timeouts.value.delete
-      read   = timeouts.value.read
-      update = timeouts.value.update
+  body = jsonencode({
+    properties = {
+      state                   = var.security_alert_policy.enabled ? "Enabled" : "Disabled"
+      disabledAlerts          = var.security_alert_policy.disabled_alerts
+      emailAccountAdmins      = var.security_alert_policy.email_account_admins_enabled
+      emailAddresses          = var.security_alert_policy.email_addresses
+      retentionDays           = var.security_alert_policy.retention_days
+      storageAccountAccessKey = var.security_alert_policy.storage_account_access_key
+      storageEndpoint         = var.security_alert_policy.storage_endpoint
     }
-  }
+  })
 }
 
 resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {

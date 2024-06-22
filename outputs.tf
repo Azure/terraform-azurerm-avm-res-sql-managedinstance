@@ -18,5 +18,5 @@ output "resource_id" {
 }
 
 output "identity" {
-  value = data.azapi_resource.identity.output.properties.identity
+  value = jsondecode(data.azapi_resource.identity.output).identity
 }
