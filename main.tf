@@ -98,6 +98,30 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
   }
 }
 
+resource "azapi_resource" "mssql_managed_instance_vulnerability_assessment" {
+  count = var.vulnerability_assessment == {} ? 0 : 1
+
+  type                      = "Microsoft.Sql/managedInstances/vulnerabilityAssessments@2023-05-01-preview"
+  name                      = "default"
+  parent_id                 = azurerm_mssql_managed_instance.this.id
+  schema_validation_enabled = true
+
+  body = {
+    properties = {
+      storageContainerPath = var.vulnerability_assessment.storage_container_path
+      recurringScans = [
+        for scan in var.vulnerability_assessment.recurring_scans == null ? [] : [var.vulnerability_assessment.recurring_scans] : {
+          emailSubscriptionAdmins = scan.email_subscription_admins
+          emails                  = scan.emails
+          isEnabled               = scan.enabled
+        }
+      ]
+      storageAccountAccessKey = var.vulnerability_assessment.storage_account_access_key
+      storageContainerSasKey  = var.vulnerability_assessment.storage_container_sas_key
+    }
+  }
+}
+
 resource "azurerm_mssql_managed_instance_vulnerability_assessment" "this" {
   count = var.vulnerability_assessment == {} ? 0 : 1
 
@@ -125,8 +149,12 @@ resource "azurerm_mssql_managed_instance_vulnerability_assessment" "this" {
   }
 }
 
-
-
+# # this appear to be required for vulnerability assessments to function
+# resource "azurerm_role_assignment" "sqlmi-system_assigned" {
+#   scope                = var.storage_account_resource_id
+#   role_definition_name = "Storage Blob Data Contributor"
+#   principal_id         = jsondecode(data.azapi_resource.identity.output).identity.principal_id
+# }
 
 # required AVM resources interfaces
 resource "azurerm_management_lock" "this" {
