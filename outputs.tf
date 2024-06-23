@@ -1,3 +1,8 @@
+output "identity" {
+  description = "Managed identities for the SQL MI instance.  This is not available from the `resource` output because AzureRM doesn't yet support adding both User and System Assigned identities."
+  value       = jsondecode(data.azapi_resource.identity.output).identity
+}
+
 output "private_endpoints" {
   description = <<DESCRIPTION
   A map of the private endpoints created.
@@ -9,5 +14,10 @@ output "private_endpoints" {
 # https://azure.github.io/Azure-Verified-Modules/specs/terraform/#id-tffr2---category-outputs---additional-terraform-outputs
 output "resource" {
   description = "This is the full output for the resource."
-  value       = azurerm_resource_group.TODO # TODO: Replace this dummy resource azurerm_resource_group.TODO with your module resource
+  value       = azurerm_mssql_managed_instance.this
+}
+
+output "resource_id" {
+  description = "This is the resource ID of the resource."
+  value       = azurerm_mssql_managed_instance.this.id
 }
