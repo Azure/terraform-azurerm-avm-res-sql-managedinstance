@@ -18,6 +18,7 @@ resource "azurerm_mssql_managed_instance" "this" {
   storage_account_type           = var.storage_account_type
   tags                           = var.tags
   timezone_id                    = var.timezone_id
+  zone_redundant_enabled         = var.zone_redundant_enabled
 
   dynamic "timeouts" {
     for_each = var.timeouts == null ? [] : [var.timeouts]
@@ -63,9 +64,8 @@ resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" 
 resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" {
   count = var.security_alert_policy == {} ? 0 : 1
 
-  type        = "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-08-01-preview"
   resource_id = "${azurerm_mssql_managed_instance.this.id}/securityAlertPolicies/Default"
-  method      = "PUT"
+  type        = "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-08-01-preview"
   body = {
     properties = {
       disabledAlerts          = try(var.security_alert_policy.disabled_alerts, [])
@@ -77,6 +77,7 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
       storageEndpoint         = try(var.security_alert_policy.storage_endpoint, null)
     }
   }
+  method = "PUT"
 }
 
 resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
@@ -105,9 +106,8 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
 resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessment" {
   count = var.vulnerability_assessment == {} ? 0 : 1
 
-  type        = "Microsoft.Sql/managedInstances/vulnerabilityAssessments@2023-08-01-preview"
   resource_id = "${azurerm_mssql_managed_instance.this.id}/vulnerabilityAssessments/default"
-  method      = "PUT"
+  type        = "Microsoft.Sql/managedInstances/vulnerabilityAssessments@2023-08-01-preview"
   body = {
     properties = {
       storageAccountAccessKey = try(var.vulnerability_assessment.storage_account_access_key, null)
@@ -120,14 +120,18 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
       } : null
     }
   }
+  method = "PUT"
 }
 
-# # this appear to be required for vulnerability assessments to function
-# resource "azurerm_role_assignment" "sqlmi-system_assigned" {
-#   scope                = var.storage_account_resource_id
-#   role_definition_name = "Storage Blob Data Contributor"
-#   principal_id         = jsondecode(data.azapi_resource.identity.output).identity.principal_id
-# }
+# this is required for vulnerability assessments to function - user assigned identities are not supported
+# https://learn.microsoft.com/en-us/azure/azure-sql/database/sql-database-vulnerability-assessment-storage?view=azuresql
+resource "azurerm_role_assignment" "sqlmi_system_assigned" {
+  count = var.storage_account_resource_id != null ? 1 : 0
+
+  principal_id         = jsondecode(data.azapi_resource.identity.output).identity.principal_id
+  scope                = var.storage_account_resource_id
+  role_definition_name = "Storage Blob Data Contributor"
+}
 
 # required AVM resources interfaces
 resource "azurerm_management_lock" "this" {
@@ -156,10 +160,10 @@ resource "azurerm_role_assignment" "this" {
 # prevents system & user assigned identities being set at the same time.
 # https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
 resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
-  count       = local.managed_identities.system_assigned_user_assigned == {} ? 0 : 1
-  type        = "Microsoft.Sql/managedInstances@2023-05-01-preview"
+  count = local.managed_identities.system_assigned_user_assigned == {} ? 0 : 1
+
   resource_id = azurerm_mssql_managed_instance.this.id
-  method      = "PATCH"
+  type        = "Microsoft.Sql/managedInstances@2023-05-01-preview"
   body = {
     identity = {
       type = local.managed_identities.system_assigned_user_assigned.this.type
@@ -171,6 +175,7 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
       primaryUserAssignedIdentityId = length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0] : null
     }
   }
+  method = "PATCH"
 }
 
 data "azurerm_resource_group" "parent" {
@@ -178,10 +183,9 @@ data "azurerm_resource_group" "parent" {
 }
 
 data "azapi_resource" "identity" {
-  name      = azurerm_mssql_managed_instance.this.name
-  parent_id = data.azurerm_resource_group.parent.id
-  type      = "Microsoft.Sql/managedInstances@2023-05-01-preview"
-
+  type                   = "Microsoft.Sql/managedInstances@2023-05-01-preview"
+  name                   = azurerm_mssql_managed_instance.this.name
+  parent_id              = data.azurerm_resource_group.parent.id
   response_export_values = ["identity"]
 
   depends_on = [azapi_resource_action.sql_managed_instance_patch_identities]

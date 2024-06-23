@@ -198,6 +198,22 @@ DESCRIPTION
   nullable    = false
 }
 
+variable "storage_account_resource_id" {
+  type        = string
+  default     = null
+  description = <<-DESCRIPTION
+(Optional) Storage Account to store vulnerability assessments.  
+
+The System Assigned Managed Identity will be granted Storage Blob Data Contributor over this storage account.  
+
+Note these limitations documented in Microsoft Learn - <https://learn.microsoft.com/en-us/azure/azure-sql/database/sql-database-vulnerability-assessment-storage?view=azuresql#store-va-scan-results-for-azure-sql-managed-instance-in-a-storage-account-that-can-be-accessed-behind-a-firewall-or-vnet>
+
+* User Assigned MIs are not supported
+* The storage account firewall public network access must be allowed.  If "Enabled from selected virtual networks and IP addresses" is set (recommended), the SQL MI subnet ID must be added to the storage account firewall.
+
+DESCRIPTION  
+}
+
 variable "vulnerability_assessment" {
   type = object({
     storage_account_access_key = optional(string)
@@ -216,9 +232,9 @@ variable "vulnerability_assessment" {
     }))
   })
   description = <<-DESCRIPTION
- - `storage_account_access_key` - (Optional) Specifies the identifier key of the storage account for vulnerability assessment scan results. If `storage_container_sas_key` isn't specified, `storage_account_access_key` is required.
+ - `storage_account_access_key` - (Optional) Specifies the identifier key of the storage account for vulnerability assessment scan results. If `storage_container_sas_key` isn't specified, `storage_account_access_key` is required.  Set to `null` if the storage account is protected by a resource firewall.
  - `storage_container_path` - (Required) A blob storage container path to hold the scan results (e.g. <https://myStorage.blob.core.windows.net/VaScans/>).
- - `storage_container_sas_key` - (Optional) A shared access signature (SAS Key) that has write access to the blob container specified in `storage_container_path` parameter. If `storage_account_access_key` isn't specified, `storage_container_sas_key` is required.
+ - `storage_container_sas_key` - (Optional) A shared access signature (SAS Key) that has write access to the blob container specified in `storage_container_path` parameter. If `storage_account_access_key` isn't specified, `storage_container_sas_key` is required.  Set to `null` if the storage account is protected by a resource firewall.
 
  ---
  `recurring_scans` block supports the following:

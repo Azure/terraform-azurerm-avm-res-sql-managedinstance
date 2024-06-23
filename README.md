@@ -17,6 +17,8 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.5)
 
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 1.13)
+
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 3.71)
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
@@ -24,6 +26,8 @@ The following requirements are needed by this module:
 ## Providers
 
 The following providers are used by this module:
+
+- <a name="provider_azapi"></a> [azapi](#provider\_azapi) (~> 1.13)
 
 - <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (~> 3.71)
 
@@ -33,19 +37,23 @@ The following providers are used by this module:
 
 The following resources are used by this module:
 
+- [azapi_resource_action.mssql_managed_instance_security_alert_policy](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_resource_action.mssql_managed_instance_vulnerability_assessment](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_resource_action.sql_managed_instance_patch_identities](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
 - [azurerm_mssql_managed_database.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_database) (resource)
 - [azurerm_mssql_managed_instance.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance) (resource)
 - [azurerm_mssql_managed_instance_active_directory_administrator.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_active_directory_administrator) (resource)
-- [azurerm_mssql_managed_instance_security_alert_policy.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_security_alert_policy) (resource)
 - [azurerm_mssql_managed_instance_transparent_data_encryption.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_transparent_data_encryption) (resource)
-- [azurerm_mssql_managed_instance_vulnerability_assessment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_vulnerability_assessment) (resource)
 - [azurerm_private_endpoint.this_managed_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint.this_unmanaged_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint_application_security_group_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint_application_security_group_association) (resource)
 - [azurerm_resource_group_template_deployment.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group_template_deployment) (resource)
+- [azurerm_role_assignment.sqlmi_system_assigned](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [random_id.telem](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) (resource)
+- [azapi_resource.identity](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/resource) (data source)
+- [azurerm_resource_group.parent](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resource_group) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -486,6 +494,21 @@ object({
 
 Default: `{}`
 
+### <a name="input_storage_account_resource_id"></a> [storage\_account\_resource\_id](#input\_storage\_account\_resource\_id)
+
+Description: (Optional) Storage Account to store vulnerability assessments.
+
+The System Assigned Managed Identity will be granted Storage Blob Data Contributor over this storage account.
+
+Note these limitations documented in Microsoft Learn - <https://learn.microsoft.com/en-us/azure/azure-sql/database/sql-database-vulnerability-assessment-storage?view=azuresql#store-va-scan-results-for-azure-sql-managed-instance-in-a-storage-account-that-can-be-accessed-behind-a-firewall-or-vnet>
+
+* User Assigned MIs are not supported
+* The storage account firewall public network access must be allowed.  If "Enabled from selected virtual networks and IP addresses" is set (recommended), the SQL MI subnet ID must be added to the storage account firewall.
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_storage_account_type"></a> [storage\_account\_type](#input\_storage\_account\_type)
 
 Description: (Optional) Specifies the storage account type used to store backups for this database. Changing this forces a new resource to be created. Possible values are `GRS`, `LRS` and `ZRS`. Defaults to `GRS`.
@@ -561,9 +584,9 @@ Default: `{}`
 
 ### <a name="input_vulnerability_assessment"></a> [vulnerability\_assessment](#input\_vulnerability\_assessment)
 
-Description: - `storage_account_access_key` - (Optional) Specifies the identifier key of the storage account for vulnerability assessment scan results. If `storage_container_sas_key` isn't specified, `storage_account_access_key` is required.
+Description: - `storage_account_access_key` - (Optional) Specifies the identifier key of the storage account for vulnerability assessment scan results. If `storage_container_sas_key` isn't specified, `storage_account_access_key` is required.  Set to `null` if the storage account is protected by a resource firewall.
 - `storage_container_path` - (Required) A blob storage container path to hold the scan results (e.g. <https://myStorage.blob.core.windows.net/VaScans/>).
-- `storage_container_sas_key` - (Optional) A shared access signature (SAS Key) that has write access to the blob container specified in `storage_container_path` parameter. If `storage_account_access_key` isn't specified, `storage_container_sas_key` is required.
+- `storage_container_sas_key` - (Optional) A shared access signature (SAS Key) that has write access to the blob container specified in `storage_container_path` parameter. If `storage_account_access_key` isn't specified, `storage_container_sas_key` is required.  Set to `null` if the storage account is protected by a resource firewall.
 
 ---
 `recurring_scans` block supports the following:
@@ -612,6 +635,10 @@ Default: `true`
 ## Outputs
 
 The following outputs are exported:
+
+### <a name="output_identity"></a> [identity](#output\_identity)
+
+Description: Managed identities for the SQL MI instance.  This is not available from the `resource` output because AzureRM doesn't yet support adding both User and System Assigned identities.
 
 ### <a name="output_private_endpoints"></a> [private\_endpoints](#output\_private\_endpoints)
 
