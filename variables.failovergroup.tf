@@ -4,10 +4,10 @@ variable "failover_group" {
     name                                      = optional(string)
     partner_managed_instance_id               = optional(string)
     readonly_endpoint_failover_policy_enabled = optional(bool)
-    read_write_endpoint_failover_policy = object({
+    read_write_endpoint_failover_policy = optional(object({
       grace_minutes = optional(number)
       mode          = optional(string)
-    })
+    }))
     timeouts = optional(object({
       create = optional(string)
       delete = optional(string)
