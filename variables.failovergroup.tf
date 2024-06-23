@@ -1,5 +1,5 @@
 variable "failover_group" {
-  type = object({
+  type = map(object({
     location                                  = optional(string)
     name                                      = optional(string)
     partner_managed_instance_id               = optional(string)
@@ -14,8 +14,11 @@ variable "failover_group" {
       read   = optional(string)
       update = optional(string)
     }))
-  })
+  }))
   description = <<-DESCRIPTION
+
+Map of failover groups.  There can only be one failover group in the map.
+
  - `location` - (Required) The Azure Region where the Managed Instance Failover Group should exist. Changing this forces a new resource to be created.
  - `name` - (Required) The name which should be used for this Managed Instance Failover Group. Changing this forces a new resource to be created.
  - `partner_managed_instance_id` - (Required) The ID of the Azure SQL Managed Instance which will be replicated to. Changing this forces a new resource to be created.
@@ -35,4 +38,8 @@ variable "failover_group" {
 DESCRIPTION
   nullable    = false
   default     = {}
+  validation {
+    condition     = length(var.failover_group) <= 1
+    error_message = "The 'failover_group' map must contain 0 or 1 items."
+  }
 }
