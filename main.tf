@@ -97,7 +97,11 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
   }
 }
 
+# API:
 # https://learn.microsoft.com/en-us/rest/api/sql/managed-instance-vulnerability-assessments/create-or-update?view=rest-sql-2023-08-01-preview&tabs=HTTP
+# 
+# Note that user assigned identities are not support for vulnerability assessments, so must use user assigned & system assigned, or just system assigned.
+# https://learn.microsoft.com/en-us/azure/azure-sql/database/sql-database-vulnerability-assessment-storage?view=azuresql#store-va-scan-results-for-azure-sql-managed-instance-in-a-storage-account-that-can-be-accessed-behind-a-firewall-or-vnet
 resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessment" {
   count = var.vulnerability_assessment == {} ? 0 : 1
 
