@@ -3,6 +3,14 @@
 
 This is an Azure Verified Modules for SQL Managed Instances.
 
+The module supports the following capabilities:
+
+* All supported AzureRM parameters for the `azurerm_mssql_managed_instance` resource.
+* Advanced Threat Protection, enabled by default.
+* Vulnerability Assessments & Security Access Policies with a restricted storage account (supplied via `storage_account_resource_id`)
+* Configuration for a failover group
+* A map of databases, along with support for all parameters, such as long term backup retention policies.
+
 > [!IMPORTANT]
 > As the overall AVM framework is not GA (generally available) yet - the CI framework and test automation is not fully functional and implemented across all supported languages yet - breaking changes are expected, and additional customer feedback is yet to be gathered and incorporated. Hence, modules **MUST NOT** be published at version `1.0.0` or higher at this time.
 >
@@ -39,6 +47,7 @@ The following resources are used by this module:
 
 - [azapi_resource_action.mssql_managed_instance_security_alert_policy](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
 - [azapi_resource_action.mssql_managed_instance_vulnerability_assessment](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_resource_action.sql_advanced_threat_protection](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
 - [azapi_resource_action.sql_managed_instance_patch_identities](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
 - [azurerm_mssql_managed_database.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_database) (resource)
@@ -282,6 +291,14 @@ Description: (Optional) The ID of the SQL Managed Instance which will share the 
 Type: `string`
 
 Default: `null`
+
+### <a name="input_enable_advanced_threat_protection"></a> [enable\_advanced\_threat\_protection](#input\_enable\_advanced\_threat\_protection)
+
+Description: (Optional) Whether to enabled Defender for SQL Advanced Threat Protection.
+
+Type: `bool`
+
+Default: `true`
 
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 

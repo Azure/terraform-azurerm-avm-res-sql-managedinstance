@@ -12,6 +12,13 @@ variable "administrator_login_password" {
   sensitive   = true
 }
 
+variable "enable_advanced_threat_protection" {
+  type        = bool
+  default     = true
+  description = "(Optional) Whether to enabled Defender for SQL Advanced Threat Protection."
+  nullable    = false
+}
+
 variable "license_type" {
   type        = string
   description = "(Required) What type of license the Managed Instance will use. Possible values are `LicenseIncluded` and `BasePrice`."

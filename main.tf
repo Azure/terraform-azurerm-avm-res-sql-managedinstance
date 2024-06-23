@@ -190,3 +190,14 @@ data "azapi_resource" "identity" {
 
   depends_on = [azapi_resource_action.sql_managed_instance_patch_identities]
 }
+
+resource "azapi_resource_action" "sql_advanced_threat_protection" {
+  resource_id = "${azurerm_mssql_managed_instance.this.id}/advancedThreatProtectionSettings/Default"
+  type        = "Microsoft.Sql/managedInstances/advancedThreatProtectionSettings@2023-08-01-preview"
+  body = {
+    properties = {
+      state = var.enable_advanced_threat_protection ? "Enabled" : "Disabled"
+    }
+  }
+  method = "PUT"
+}
