@@ -228,9 +228,9 @@ module "sqlmi_test" {
   subnet_id                    = azurerm_subnet.this.id
   vcores                       = "4"
   managed_identities = {
-  system_assigned           = false
-  user_assigned_resource_ids = []
-} 
+    system_assigned            = false
+    user_assigned_resource_ids = []
+  }
 
   depends_on = [
     azurerm_subnet_network_security_group_association.this,
