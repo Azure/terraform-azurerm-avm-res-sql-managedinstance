@@ -212,6 +212,12 @@ resource "random_password" "myadminpassword" {
   special          = true
 }
 
+resource "azurerm_user_assigned_identity" "uami" {
+  name                = "user-identity"
+  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.this.location
+}
+
 # This is the module call
 module "sqlmi_test" {
   source = "../../"
@@ -229,7 +235,7 @@ module "sqlmi_test" {
   vcores                       = "4"
   managed_identities = {
     system_assigned            = true
-    user_assigned_resource_ids = []
+    user_assigned_resource_ids = [azurerm_user_assigned_identity.uami.id]
   }
 
   depends_on = [
