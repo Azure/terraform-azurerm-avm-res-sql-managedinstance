@@ -207,23 +207,12 @@ resource "azurerm_subnet_route_table_association" "this" {
 }
 
 resource "random_password" "myadminpassword" {
-/*
-  length      = 20
-  min_lower   = 5
-  min_upper   = 5
-  min_numeric = 5
-  special     = false
-  lifecycle {
-    ignore_changes = [min_lower, min_upper, min_numeric]
-  }
-  override_special = "_%@"
-*/
-  length  = 16
-  special = true
-  override_special = "@#%*()-_=+[]{}:?"
+  length = 16
   keepers = {
     trigger = timestamp()
   }
+  override_special = "@#%*()-_=+[]{}:?"
+  special          = true
 }
 
 resource "azurerm_user_assigned_identity" "uami" {
