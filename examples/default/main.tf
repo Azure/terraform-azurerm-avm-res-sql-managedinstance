@@ -213,9 +213,9 @@ resource "random_password" "myadminpassword" {
 }
 
 resource "azurerm_user_assigned_identity" "uami" {
+  location            = azurerm_resource_group.this.location
   name                = "user-identity"
   resource_group_name = azurerm_resource_group.this.name
-  location            = azurerm_resource_group.this.location
 }
 
 # This is the module call

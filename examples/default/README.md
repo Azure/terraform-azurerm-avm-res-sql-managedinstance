@@ -218,6 +218,12 @@ resource "random_password" "myadminpassword" {
   special          = true
 }
 
+resource "azurerm_user_assigned_identity" "uami" {
+  location            = azurerm_resource_group.this.location
+  name                = "user-identity"
+  resource_group_name = azurerm_resource_group.this.name
+}
+
 # This is the module call
 module "sqlmi_test" {
   source = "../../"
@@ -235,7 +241,7 @@ module "sqlmi_test" {
   vcores                       = "4"
   managed_identities = {
     system_assigned            = true
-    user_assigned_resource_ids = []
+    user_assigned_resource_ids = [azurerm_user_assigned_identity.uami.id]
   }
 
   depends_on = [
@@ -274,6 +280,7 @@ The following resources are used by this module:
 - [azurerm_subnet.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet_network_security_group_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_network_security_group_association) (resource)
 - [azurerm_subnet_route_table_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
+- [azurerm_user_assigned_identity.uami](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/user_assigned_identity) (resource)
 - [azurerm_virtual_network.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
 - [random_password.myadminpassword](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) (resource)
