@@ -194,7 +194,7 @@ resource "azurerm_route_table" "this" {
   location                      = azurerm_resource_group.this.location
   name                          = "routetable-mi"
   resource_group_name           = azurerm_resource_group.this.name
-  disable_bgp_route_propagation = false
+  bgp_route_propagation_enabled = false
 
   depends_on = [
     azurerm_subnet.this,
@@ -227,6 +227,10 @@ module "sqlmi_test" {
   storage_size_in_gb           = 32
   subnet_id                    = azurerm_subnet.this.id
   vcores                       = "4"
+  managed_identities = {
+  system_assigned           = false
+  user_assigned_resource_ids = []
+} 
 
   depends_on = [
     azurerm_subnet_network_security_group_association.this,
