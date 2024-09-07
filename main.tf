@@ -22,6 +22,7 @@ resource "azurerm_mssql_managed_instance" "this" {
 
   dynamic "timeouts" {
     for_each = var.timeouts == null ? [] : [var.timeouts]
+
     content {
       create = timeouts.value.create
       delete = timeouts.value.delete
@@ -51,6 +52,7 @@ resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" 
 
   dynamic "timeouts" {
     for_each = var.active_directory_administrator.timeouts == null ? [] : [var.active_directory_administrator.timeouts]
+
     content {
       create = timeouts.value.create
       delete = timeouts.value.delete
@@ -89,6 +91,7 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
 
   dynamic "timeouts" {
     for_each = var.transparent_data_encryption.timeouts == null ? [] : [var.transparent_data_encryption.timeouts]
+
     content {
       create = timeouts.value.create
       delete = timeouts.value.delete

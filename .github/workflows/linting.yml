@@ -22,6 +22,7 @@ jobs:
     steps:
       - name: checkout repository
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.1.7
+
       - name: check docs
         uses: Azure/terraform-azurerm-avm-template/.github/actions/docs-check@main
 
@@ -32,6 +33,7 @@ jobs:
     steps:
       - name: checkout repository
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.1.7
+
       - name: lint terraform
         uses: Azure/terraform-azurerm-avm-template/.github/actions/linting@main
         with:
@@ -44,6 +46,7 @@ jobs:
     steps:
       - name: checkout repository
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 #v4.1.7
+
       - name: avmfix
         uses: Azure/terraform-azurerm-avm-template/.github/actions/avmfix@main
 

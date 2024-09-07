@@ -9,6 +9,7 @@ resource "azurerm_mssql_managed_instance_failover_group" "this" {
 
   dynamic "read_write_endpoint_failover_policy" {
     for_each = [each.value.read_write_endpoint_failover_policy]
+
     content {
       mode          = read_write_endpoint_failover_policy.value.mode
       grace_minutes = read_write_endpoint_failover_policy.value.grace_minutes
@@ -16,6 +17,7 @@ resource "azurerm_mssql_managed_instance_failover_group" "this" {
   }
   dynamic "timeouts" {
     for_each = each.value.timeouts == null ? [] : [each.value.timeouts]
+
     content {
       create = timeouts.value.create
       delete = timeouts.value.delete

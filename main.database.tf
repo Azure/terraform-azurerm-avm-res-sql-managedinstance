@@ -7,6 +7,7 @@ resource "azurerm_mssql_managed_database" "this" {
 
   dynamic "long_term_retention_policy" {
     for_each = each.value.long_term_retention_policy == null ? [] : [each.value.long_term_retention_policy]
+
     content {
       monthly_retention = long_term_retention_policy.value.monthly_retention
       week_of_year      = long_term_retention_policy.value.week_of_year
@@ -16,6 +17,7 @@ resource "azurerm_mssql_managed_database" "this" {
   }
   dynamic "point_in_time_restore" {
     for_each = each.value.point_in_time_restore == null ? [] : [each.value.point_in_time_restore]
+
     content {
       restore_point_in_time = point_in_time_restore.value.restore_point_in_time
       source_database_id    = point_in_time_restore.value.source_database_id
@@ -23,6 +25,7 @@ resource "azurerm_mssql_managed_database" "this" {
   }
   dynamic "timeouts" {
     for_each = each.value.timeouts == null ? [] : [each.value.timeouts]
+
     content {
       create = timeouts.value.create
       delete = timeouts.value.delete
