@@ -87,7 +87,7 @@ variable "public_data_endpoint_enabled" {
 
 variable "storage_account_type" {
   type        = string
-  default     = null
+  default     = "GRS"
   description = "(Optional) Specifies the storage account type used to store backups for this database. Changing this forces a new resource to be created. Possible values are `GRS`, `LRS` and `ZRS`. Defaults to `GRS`."
 }
 

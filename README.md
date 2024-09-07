@@ -572,7 +572,7 @@ Description: (Optional) Specifies the storage account type used to store backups
 
 Type: `string`
 
-Default: `null`
+Default: `"GRS"`
 
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
