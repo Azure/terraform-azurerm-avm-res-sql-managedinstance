@@ -19,7 +19,11 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
 
 
@@ -45,23 +49,212 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = module.regions.regions[random_integer.region_index.result].name
+  location = "japaneast" #module.regions.regions[random_integer.region_index.result].name
   name     = module.naming.resource_group.name_unique
 }
 
-# This is the module call
-# Do not specify location here due to the randomization above.
-# Leaving location as `null` will cause the module to use the resource group location
-# with a data source.
-module "test" {
-  source = "../../"
-  # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  # ...
+resource "azurerm_network_security_group" "this" {
   location            = azurerm_resource_group.this.location
-  name                = "TODO" # TODO update with module.naming.<RESOURCE_TYPE>.name_unique
+  name                = "mi-security-group"
   resource_group_name = azurerm_resource_group.this.name
+}
 
-  enable_telemetry = var.enable_telemetry # see variables.tf
+
+resource "azurerm_network_security_rule" "allow_management_inbound" {
+  access                      = "Allow"
+  direction                   = "Inbound"
+  name                        = "allow_management_inbound"
+  network_security_group_name = azurerm_network_security_group.this.name
+  priority                    = 106
+  protocol                    = "Tcp"
+  resource_group_name         = azurerm_resource_group.this.name
+  destination_address_prefix  = "*"
+  destination_port_ranges     = ["9000", "9003", "1438", "1440", "1452"]
+  source_address_prefix       = "*"
+  source_port_range           = "*"
+}
+
+resource "azurerm_network_security_rule" "allow_misubnet_inbound" {
+  access                      = "Allow"
+  direction                   = "Inbound"
+  name                        = "allow_misubnet_inbound"
+  network_security_group_name = azurerm_network_security_group.this.name
+  priority                    = 200
+  protocol                    = "*"
+  resource_group_name         = azurerm_resource_group.this.name
+  destination_address_prefix  = "*"
+  destination_port_range      = "*"
+  source_address_prefix       = "10.0.0.0/24"
+  source_port_range           = "*"
+}
+
+resource "azurerm_network_security_rule" "allow_health_probe_inbound" {
+  access                      = "Allow"
+  direction                   = "Inbound"
+  name                        = "allow_health_probe_inbound"
+  network_security_group_name = azurerm_network_security_group.this.name
+  priority                    = 300
+  protocol                    = "*"
+  resource_group_name         = azurerm_resource_group.this.name
+  destination_address_prefix  = "*"
+  destination_port_range      = "*"
+  source_address_prefix       = "AzureLoadBalancer"
+  source_port_range           = "*"
+}
+
+resource "azurerm_network_security_rule" "allow_tds_inbound" {
+  access                      = "Allow"
+  direction                   = "Inbound"
+  name                        = "allow_tds_inbound"
+  network_security_group_name = azurerm_network_security_group.this.name
+  priority                    = 1000
+  protocol                    = "Tcp"
+  resource_group_name         = azurerm_resource_group.this.name
+  destination_address_prefix  = "*"
+  destination_port_range      = "1433"
+  source_address_prefix       = "VirtualNetwork"
+  source_port_range           = "*"
+}
+
+resource "azurerm_network_security_rule" "deny_all_inbound" {
+  access                      = "Deny"
+  direction                   = "Inbound"
+  name                        = "deny_all_inbound"
+  network_security_group_name = azurerm_network_security_group.this.name
+  priority                    = 4096
+  protocol                    = "*"
+  resource_group_name         = azurerm_resource_group.this.name
+  destination_address_prefix  = "*"
+  destination_port_range      = "*"
+  source_address_prefix       = "*"
+  source_port_range           = "*"
+}
+
+resource "azurerm_network_security_rule" "allow_management_outbound" {
+  access                      = "Allow"
+  direction                   = "Outbound"
+  name                        = "allow_management_outbound"
+  network_security_group_name = azurerm_network_security_group.this.name
+  priority                    = 106
+  protocol                    = "Tcp"
+  resource_group_name         = azurerm_resource_group.this.name
+  destination_address_prefix  = "*"
+  destination_port_ranges     = ["80", "443", "12000"]
+  source_address_prefix       = "*"
+  source_port_range           = "*"
+}
+
+resource "azurerm_network_security_rule" "allow_misubnet_outbound" {
+  access                      = "Allow"
+  direction                   = "Outbound"
+  name                        = "allow_misubnet_outbound"
+  network_security_group_name = azurerm_network_security_group.this.name
+  priority                    = 200
+  protocol                    = "*"
+  resource_group_name         = azurerm_resource_group.this.name
+  destination_address_prefix  = "*"
+  destination_port_range      = "*"
+  source_address_prefix       = "10.0.0.0/24"
+  source_port_range           = "*"
+}
+
+resource "azurerm_network_security_rule" "deny_all_outbound" {
+  access                      = "Deny"
+  direction                   = "Outbound"
+  name                        = "deny_all_outbound"
+  network_security_group_name = azurerm_network_security_group.this.name
+  priority                    = 4096
+  protocol                    = "*"
+  resource_group_name         = azurerm_resource_group.this.name
+  destination_address_prefix  = "*"
+  destination_port_range      = "*"
+  source_address_prefix       = "*"
+  source_port_range           = "*"
+}
+
+resource "azurerm_virtual_network" "this" {
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.this.location
+  name                = "vnet-mi"
+  resource_group_name = azurerm_resource_group.this.name
+}
+
+resource "azurerm_subnet" "this" {
+  address_prefixes     = ["10.0.0.0/24"]
+  name                 = "subnet-mi"
+  resource_group_name  = azurerm_resource_group.this.name
+  virtual_network_name = azurerm_virtual_network.this.name
+
+  delegation {
+    name = "managedinstancedelegation"
+
+    service_delegation {
+      name    = "Microsoft.Sql/managedInstances"
+      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action", "Microsoft.Network/virtualNetworks/subnets/prepareNetworkPolicies/action", "Microsoft.Network/virtualNetworks/subnets/unprepareNetworkPolicies/action"]
+    }
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "this" {
+  network_security_group_id = azurerm_network_security_group.this.id
+  subnet_id                 = azurerm_subnet.this.id
+}
+
+resource "azurerm_route_table" "this" {
+  location                      = azurerm_resource_group.this.location
+  name                          = "routetable-mi"
+  resource_group_name           = azurerm_resource_group.this.name
+  bgp_route_propagation_enabled = false
+
+  depends_on = [
+    azurerm_subnet.this,
+  ]
+}
+
+resource "azurerm_subnet_route_table_association" "this" {
+  route_table_id = azurerm_route_table.this.id
+  subnet_id      = azurerm_subnet.this.id
+}
+
+resource "random_password" "myadminpassword" {
+  length = 16
+  keepers = {
+    trigger = timestamp()
+  }
+  override_special = "@#%*()-_=+[]{}:?"
+  special          = true
+}
+
+resource "azurerm_user_assigned_identity" "uami" {
+  location            = azurerm_resource_group.this.location
+  name                = "user-identity"
+  resource_group_name = azurerm_resource_group.this.name
+}
+
+# This is the module call
+module "sqlmi_test" {
+  source = "../../"
+  # source             = "Azure/avm-res-sql-managedinstance/azurerm"
+  # ...
+  location                     = azurerm_resource_group.this.location
+  name                         = module.naming.mssql_managed_instance.name_unique
+  resource_group_name          = azurerm_resource_group.this.name
+  administrator_login          = "myspecialsqladmin"
+  administrator_login_password = random_password.myadminpassword.result
+  license_type                 = "LicenseIncluded"
+  sku_name                     = "GP_Gen5"
+  storage_size_in_gb           = 32
+  subnet_id                    = azurerm_subnet.this.id
+  vcores                       = "4"
+  managed_identities = {
+    system_assigned            = true
+    user_assigned_resource_ids = [azurerm_user_assigned_identity.uami.id]
+  }
+
+  depends_on = [
+    azurerm_subnet_network_security_group_association.this,
+    azurerm_subnet_route_table_association.this,
+  ]
 }
 ```
 
@@ -76,20 +269,28 @@ The following requirements are needed by this module:
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
 
-## Providers
-
-The following providers are used by this module:
-
-- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (~> 3.74)
-
-- <a name="provider_random"></a> [random](#provider\_random) (~> 3.5)
-
 ## Resources
 
 The following resources are used by this module:
 
+- [azurerm_network_security_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_group) (resource)
+- [azurerm_network_security_rule.allow_health_probe_inbound](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule) (resource)
+- [azurerm_network_security_rule.allow_management_inbound](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule) (resource)
+- [azurerm_network_security_rule.allow_management_outbound](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule) (resource)
+- [azurerm_network_security_rule.allow_misubnet_inbound](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule) (resource)
+- [azurerm_network_security_rule.allow_misubnet_outbound](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule) (resource)
+- [azurerm_network_security_rule.allow_tds_inbound](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule) (resource)
+- [azurerm_network_security_rule.deny_all_inbound](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule) (resource)
+- [azurerm_network_security_rule.deny_all_outbound](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule) (resource)
 - [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_route_table.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
+- [azurerm_subnet.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
+- [azurerm_subnet_network_security_group_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_network_security_group_association) (resource)
+- [azurerm_subnet_route_table_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
+- [azurerm_user_assigned_identity.uami](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/user_assigned_identity) (resource)
+- [azurerm_virtual_network.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [random_integer.region_index](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/integer) (resource)
+- [random_password.myadminpassword](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) (resource)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -98,17 +299,7 @@ No required inputs.
 
 ## Optional Inputs
 
-The following input variables are optional (have default values):
-
-### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
-
-Description: This variable controls whether or not telemetry is enabled for the module.  
-For more information see <https://aka.ms/avm/telemetryinfo>.  
-If it is set to false, then no telemetry will be collected.
-
-Type: `bool`
-
-Default: `true`
+No optional inputs.
 
 ## Outputs
 
@@ -130,7 +321,7 @@ Source: Azure/regions/azurerm
 
 Version: ~> 0.3
 
-### <a name="module_test"></a> [test](#module\_test)
+### <a name="module_sqlmi_test"></a> [sqlmi\_test](#module\_sqlmi\_test)
 
 Source: ../../
 
