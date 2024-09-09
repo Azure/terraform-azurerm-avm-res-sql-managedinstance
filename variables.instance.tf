@@ -256,8 +256,7 @@ variable "vulnerability_assessment" {
  - `read` - (Defaults to 5 minutes) Used when retrieving the Vulnerability Assessment.
  - `update` - (Defaults to 60 minutes) Used when updating the Vulnerability Assessment.
 DESCRIPTION
-  default     = {}
-  nullable    = false
+  default     = null
 }
 
 variable "zone_redundant_enabled" {
