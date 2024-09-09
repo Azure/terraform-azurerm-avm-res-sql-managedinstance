@@ -17,7 +17,6 @@ variable "resource_group_name" {
 
 # required AVM interfaces
 # remove only if not supported by the resource
-# tflint-ignore: terraform_unused_declarations
 variable "customer_managed_key" {
   type = object({
     key_vault_resource_id = string
@@ -38,7 +37,6 @@ A map describing customer-managed keys to associate with the resource. This incl
 DESCRIPTION  
 }
 
-# tflint-ignore: terraform_unused_declarations
 variable "diagnostic_settings" {
   type = map(object({
     name                                     = optional(string, null)
@@ -113,7 +111,6 @@ DESCRIPTION
   }
 }
 
-# tflint-ignore: terraform_unused_declarations
 variable "managed_identities" {
   type = object({
     system_assigned            = optional(bool, false)
@@ -221,7 +218,6 @@ DESCRIPTION
   nullable    = false
 }
 
-# tflint-ignore: terraform_unused_declarations
 variable "tags" {
   type        = map(string)
   default     = null
