@@ -19,7 +19,11 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
 }
 
 
@@ -45,7 +49,7 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = module.regions.regions[random_integer.region_index.result].name
+  location = "japaneast" #module.regions.regions[random_integer.region_index.result].name
   name     = module.naming.resource_group.name_unique
 }
 
@@ -131,7 +135,7 @@ resource "azurerm_network_security_rule" "allow_management_outbound" {
   direction                   = "Outbound"
   name                        = "allow_management_outbound"
   network_security_group_name = azurerm_network_security_group.this.name
-  priority                    = 102
+  priority                    = 106
   protocol                    = "Tcp"
   resource_group_name         = azurerm_resource_group.this.name
   destination_address_prefix  = "*"
