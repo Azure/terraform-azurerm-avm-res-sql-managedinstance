@@ -1,6 +1,6 @@
 output "identity" {
   description = "Managed identities for the SQL MI instance.  This is not available from the `resource` output because AzureRM doesn't yet support adding both User and System Assigned identities."
-  value       = jsondecode(data.azapi_resource.identity.output).identity
+  value       = try(jsondecode(data.azapi_resource.identity.output).identity, null)
 }
 
 output "private_endpoints" {
