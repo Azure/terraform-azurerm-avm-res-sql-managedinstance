@@ -58,7 +58,7 @@ variable "collation" {
 variable "dns_zone_partner_id" {
   type        = string
   default     = null
-  description = "(Optional) The ID of the SQL Managed Instance which will share the DNS zone. This is a prerequisite for creating an `azurerm_sql_managed_instance_failover_group`. Setting this after creation forces a new resource to be created."
+  description = "(Optional) The ID of the SQL Managed Instance which will share the DNS zone. This is a prerequisite for creating an `azurerm_mssql_managed_instance_failover_group`. Setting this after creation forces a new resource to be created."
 }
 
 variable "maintenance_configuration_name" {
