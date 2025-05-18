@@ -1,6 +1,4 @@
 resource "azurerm_mssql_managed_instance" "this" {
-  administrator_login            = var.administrator_login
-  administrator_login_password   = var.administrator_login_password
   license_type                   = var.license_type
   location                       = var.location
   name                           = var.name
@@ -9,6 +7,8 @@ resource "azurerm_mssql_managed_instance" "this" {
   storage_size_in_gb             = var.storage_size_in_gb
   subnet_id                      = var.subnet_id
   vcores                         = var.vcores
+  administrator_login            = var.administrator_login
+  administrator_login_password   = var.administrator_login_password
   collation                      = var.collation
   dns_zone_partner_id            = var.dns_zone_partner_id
   maintenance_configuration_name = var.maintenance_configuration_name

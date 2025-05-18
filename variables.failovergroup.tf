@@ -15,6 +15,7 @@ variable "failover_group" {
       update = optional(string)
     }))
   }))
+  default     = {}
   description = <<-DESCRIPTION
 
 Map of failover groups.  There can only be one failover group in the map.
@@ -37,7 +38,7 @@ Map of failover groups.  There can only be one failover group in the map.
  - `update` - (Defaults to 30 minutes) Used when updating the Managed Instance Failover Group.
 DESCRIPTION
   nullable    = false
-  default     = {}
+
   validation {
     condition     = length(var.failover_group) <= 1
     error_message = "The 'failover_group' map must contain 0 or 1 items."
