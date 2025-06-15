@@ -1,6 +1,4 @@
 resource "azurerm_mssql_managed_instance" "this" {
-  administrator_login            = var.administrator_login
-  administrator_login_password   = var.administrator_login_password
   license_type                   = var.license_type
   location                       = var.location
   name                           = var.name
@@ -9,6 +7,8 @@ resource "azurerm_mssql_managed_instance" "this" {
   storage_size_in_gb             = var.storage_size_in_gb
   subnet_id                      = var.subnet_id
   vcores                         = var.vcores
+  administrator_login            = var.administrator_login
+  administrator_login_password   = var.administrator_login_password
   collation                      = var.collation
   dns_zone_partner_id            = var.dns_zone_partner_id
   maintenance_configuration_name = var.maintenance_configuration_name
@@ -66,6 +66,7 @@ resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" 
 resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" {
   count = var.security_alert_policy == {} ? 0 : 1
 
+  method      = "PUT"
   resource_id = "${azurerm_mssql_managed_instance.this.id}/securityAlertPolicies/Default"
   type        = "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-08-01-preview"
   body = {
@@ -79,7 +80,6 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
       storageEndpoint         = try(var.security_alert_policy.storage_endpoint, null)
     }
   }
-  method = "PUT"
 }
 
 resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
@@ -109,6 +109,7 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
 resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessment" {
   count = var.vulnerability_assessment == null ? 0 : 1
 
+  method      = "PUT"
   resource_id = "${azurerm_mssql_managed_instance.this.id}/vulnerabilityAssessments/default"
   type        = "Microsoft.Sql/managedInstances/vulnerabilityAssessments@2023-08-01-preview"
   body = {
@@ -123,7 +124,6 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
       } : null
     }
   }
-  method = "PUT"
 }
 
 # this is required for vulnerability assessments to function - user assigned identities are not supported
@@ -165,6 +165,7 @@ resource "azurerm_role_assignment" "this" {
 resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   count = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0) ? 1 : 0
 
+  method      = "PATCH"
   resource_id = azurerm_mssql_managed_instance.this.id
   type        = "Microsoft.Sql/managedInstances@2023-05-01-preview"
   body = {
@@ -178,7 +179,6 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
       primaryUserAssignedIdentityId = length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0] : null
     }
   }
-  method = "PATCH"
 }
 
 data "azurerm_resource_group" "parent" {
@@ -186,15 +186,16 @@ data "azurerm_resource_group" "parent" {
 }
 
 data "azapi_resource" "identity" {
-  type                   = "Microsoft.Sql/managedInstances@2023-05-01-preview"
   name                   = azurerm_mssql_managed_instance.this.name
   parent_id              = data.azurerm_resource_group.parent.id
+  type                   = "Microsoft.Sql/managedInstances@2023-05-01-preview"
   response_export_values = ["identity"]
 
   depends_on = [azapi_resource_action.sql_managed_instance_patch_identities]
 }
 
 resource "azapi_resource_action" "sql_advanced_threat_protection" {
+  method      = "PUT"
   resource_id = "${azurerm_mssql_managed_instance.this.id}/advancedThreatProtectionSettings/Default"
   type        = "Microsoft.Sql/managedInstances/advancedThreatProtectionSettings@2023-08-01-preview"
   body = {
@@ -202,7 +203,6 @@ resource "azapi_resource_action" "sql_advanced_threat_protection" {
       state = var.enable_advanced_threat_protection ? "Enabled" : "Disabled"
     }
   }
-  method = "PUT"
 }
 
 resource "azurerm_monitor_diagnostic_setting" "this" {

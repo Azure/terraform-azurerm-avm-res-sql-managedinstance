@@ -228,18 +228,19 @@ resource "azurerm_user_assigned_identity" "uami" {
 # This is the module call
 module "sqlmi_test" {
   source = "../../"
-  # source             = "Azure/avm-res-sql-managedinstance/azurerm"
-  # ...
-  location                     = azurerm_resource_group.this.location
-  name                         = module.naming.mssql_managed_instance.name_unique
-  resource_group_name          = azurerm_resource_group.this.name
+
   administrator_login          = "myspecialsqladmin"
   administrator_login_password = random_password.myadminpassword.result
   license_type                 = "LicenseIncluded"
-  sku_name                     = "GP_Gen5"
-  storage_size_in_gb           = 32
-  subnet_id                    = azurerm_subnet.this.id
-  vcores                       = "4"
+  # source             = "Azure/avm-res-sql-managedinstance/azurerm"
+  # ...
+  location            = azurerm_resource_group.this.location
+  name                = module.naming.mssql_managed_instance.name_unique
+  resource_group_name = azurerm_resource_group.this.name
+  sku_name            = "GP_Gen5"
+  storage_size_in_gb  = 32
+  subnet_id           = azurerm_subnet.this.id
+  vcores              = "4"
   managed_identities = {
     system_assigned            = true
     user_assigned_resource_ids = [azurerm_user_assigned_identity.uami.id]
