@@ -25,9 +25,9 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.9, < 2.0)
 
-- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 1.13)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.0)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 4.0.0, < 5.0.0)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
 
 - <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
@@ -37,10 +37,10 @@ The following requirements are needed by this module:
 
 The following resources are used by this module:
 
-- [azapi_resource_action.mssql_managed_instance_security_alert_policy](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
-- [azapi_resource_action.mssql_managed_instance_vulnerability_assessment](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
-- [azapi_resource_action.sql_advanced_threat_protection](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
-- [azapi_resource_action.sql_managed_instance_patch_identities](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_resource_action.mssql_managed_instance_security_alert_policy](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_resource_action.mssql_managed_instance_vulnerability_assessment](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_resource_action.sql_advanced_threat_protection](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_resource_action.sql_managed_instance_patch_identities](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource_action) (resource)
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
 - [azurerm_monitor_diagnostic_setting.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
 - [azurerm_mssql_managed_database.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_database) (resource)
@@ -53,12 +53,12 @@ The following resources are used by this module:
 - [azurerm_private_endpoint_application_security_group_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint_application_security_group_association) (resource)
 - [azurerm_role_assignment.sqlmi_system_assigned](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
-- [modtm_telemetry.telemetry](https://registry.terraform.io/providers/Azure/modtm/latest/docs/resources/telemetry) (resource)
+- [modtm_telemetry.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/resources/telemetry) (resource)
 - [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
-- [azapi_resource.identity](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/resource) (data source)
+- [azapi_resource.identity](https://registry.terraform.io/providers/azure/azapi/latest/docs/data-sources/resource) (data source)
 - [azurerm_client_config.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
 - [azurerm_resource_group.parent](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resource_group) (data source)
-- [modtm_module_source.telemetry](https://registry.terraform.io/providers/Azure/modtm/latest/docs/data-sources/module_source) (data source)
+- [modtm_module_source.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/data-sources/module_source) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
