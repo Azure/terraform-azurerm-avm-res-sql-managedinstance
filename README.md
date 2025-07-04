@@ -174,6 +174,7 @@ Default: `null`
 
 Description: - `name` - (Required) The name of the Managed Database to create. Changing this forces a new resource to be created.
 - `short_term_retention_days` - (Optional) The backup retention period in days. This is how many days Point-in-Time Restore will be supported.
+- `tags` - (Optional) A mapping of tags to assign to the managed database.
 
 ---
 `long_term_retention_policy` block supports the following:
@@ -200,6 +201,7 @@ Type:
 map(object({
     name                      = string
     short_term_retention_days = optional(number)
+    tags                      = optional(map(string), null)
     long_term_retention_policy = optional(object({
       monthly_retention = optional(string)
       week_of_year      = optional(number)

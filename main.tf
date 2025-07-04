@@ -103,7 +103,7 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
 
 # API:
 # https://learn.microsoft.com/en-us/rest/api/sql/managed-instance-vulnerability-assessments/create-or-update?view=rest-sql-2023-08-01-preview&tabs=HTTP
-# 
+#
 # Note that user assigned identities are not support for vulnerability assessments, so must use user assigned & system assigned, or just system assigned.
 # https://learn.microsoft.com/en-us/azure/azure-sql/database/sql-database-vulnerability-assessment-storage?view=azuresql#store-va-scan-results-for-azure-sql-managed-instance-in-a-storage-account-that-can-be-accessed-behind-a-firewall-or-vnet
 resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessment" {
@@ -129,7 +129,7 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
 # this is required for vulnerability assessments to function - user assigned identities are not supported
 # https://learn.microsoft.com/en-us/azure/azure-sql/database/sql-database-vulnerability-assessment-storage?view=azuresql
 resource "azurerm_role_assignment" "sqlmi_system_assigned" {
-  count = var.storage_account_resource_id != null ? 1 : 0
+  count = var.vulnerability_assessment == null ? 0 : 1
 
   principal_id         = jsondecode(data.azapi_resource.identity.output).identity.principal_id
   scope                = var.storage_account_resource_id
