@@ -200,7 +200,7 @@ resource "azapi_resource_action" "sql_advanced_threat_protection" {
   type        = "Microsoft.Sql/managedInstances/advancedThreatProtectionSettings@2023-08-01-preview"
   body = {
     properties = {
-      state = var.enable_advanced_threat_protection ? "Enabled" : "Disabled"
+      state = var.advanced_threat_protection_enabled ? "Enabled" : "Disabled"
     }
   }
 }
