@@ -35,31 +35,6 @@ variable "subnet_id" {
   nullable    = false
 }
 
-variable "transparent_data_encryption" {
-  type = object({
-    auto_rotation_enabled = optional(bool)
-    key_vault_key_id      = optional(string)
-    timeouts = optional(object({
-      create = optional(string)
-      delete = optional(string)
-      read   = optional(string)
-      update = optional(string)
-    }))
-  })
-  description = <<-DESCRIPTION
- - `auto_rotation_enabled` - (Optional) When enabled, the SQL Managed Instance will continuously check the key vault for any new versions of the key being used as the TDE protector. If a new version of the key is detected, the TDE protector on the SQL Managed Instance will be automatically rotated to the latest key version within 60 minutes.
- - `key_vault_key_id` - (Optional) To use customer managed keys from Azure Key Vault, provide the AKV Key ID. To use service managed keys, omit this field.
-
- ---
- `timeouts` block supports the following:
- - `create` - (Defaults to 30 minutes) Used when creating the MSSQL.
- - `delete` - (Defaults to 30 minutes) Used when deleting the MSSQL.
- - `read` - (Defaults to 5 minutes) Used when retrieving the MSSQL.
- - `update` - (Defaults to 30 minutes) Used when updating the MSSQL.
-DESCRIPTION
-  nullable    = false
-}
-
 variable "vcores" {
   type        = number
   description = "(Required) Number of cores that should be assigned to the SQL Managed Instance. Values can be `8`, `16`, or `24` for Gen4 SKUs, or `4`, `6`, `8`, `10`, `12`, `16`, `20`, `24`, `32`, `40`, `48`, `56`, `64`, `80`, `96` or `128` for Gen5 SKUs."
@@ -217,6 +192,31 @@ variable "timezone_id" {
   type        = string
   default     = null
   description = "(Optional) The TimeZone ID that the SQL Managed Instance will be operating in. Default value is `UTC`. Changing this forces a new resource to be created."
+}
+
+variable "transparent_data_encryption" {
+  type = object({
+    auto_rotation_enabled = optional(bool)
+    key_vault_key_id      = optional(string)
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+  default     = {}
+  description = <<-DESCRIPTION
+ - `auto_rotation_enabled` - (Optional) When enabled, the SQL Managed Instance will continuously check the key vault for any new versions of the key being used as the TDE protector. If a new version of the key is detected, the TDE protector on the SQL Managed Instance will be automatically rotated to the latest key version within 60 minutes.
+ - `key_vault_key_id` - (Optional) To use customer managed keys from Azure Key Vault, provide the AKV Key ID. To use service managed keys, omit this field.
+
+ ---
+ `timeouts` block supports the following:
+ - `create` - (Defaults to 30 minutes) Used when creating the MSSQL.
+ - `delete` - (Defaults to 30 minutes) Used when deleting the MSSQL.
+ - `read` - (Defaults to 5 minutes) Used when retrieving the MSSQL.
+ - `update` - (Defaults to 30 minutes) Used when updating the MSSQL.
+DESCRIPTION
 }
 
 variable "vulnerability_assessment" {
