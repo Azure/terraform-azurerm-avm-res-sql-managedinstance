@@ -209,7 +209,7 @@ Type:
 map(object({
     name                      = string
     short_term_retention_days = optional(number)
-    tags                      = optional(map(string), null)
+    tags                      = optional(map(string))
     long_term_retention_policy = optional(object({
       monthly_retention = optional(string)
       week_of_year      = optional(number)
