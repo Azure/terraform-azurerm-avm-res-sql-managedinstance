@@ -80,6 +80,10 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
       storageEndpoint         = try(var.security_alert_policy.storage_endpoint, null)
     }
   }
+
+  depends_on = [
+    azurerm_mssql_managed_instance_active_directory_administrator.this,
+  ]
 }
 
 resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
@@ -99,6 +103,10 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
       update = timeouts.value.update
     }
   }
+
+  depends_on = [
+    azapi_resource_action.mssql_managed_instance_security_alert_policy,
+  ]
 }
 
 # API:
@@ -124,6 +132,10 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
       } : null
     }
   }
+
+  depends_on = [
+    azurerm_mssql_managed_instance_transparent_data_encryption.this,
+  ]
 }
 
 # this is required for vulnerability assessments to function - user assigned identities are not supported
@@ -179,6 +191,10 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
       primaryUserAssignedIdentityId = length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0] : null
     }
   }
+
+  depends_on = [
+    azapi_resource_action.mssql_managed_instance_vulnerability_assessment,
+  ]
 }
 
 data "azurerm_resource_group" "parent" {
@@ -190,8 +206,6 @@ data "azapi_resource" "identity" {
   parent_id              = data.azurerm_resource_group.parent.id
   type                   = "Microsoft.Sql/managedInstances@2023-05-01-preview"
   response_export_values = ["identity"]
-
-  depends_on = [azapi_resource_action.sql_managed_instance_patch_identities]
 }
 
 resource "azapi_resource_action" "sql_advanced_threat_protection" {
@@ -203,6 +217,10 @@ resource "azapi_resource_action" "sql_advanced_threat_protection" {
       state = var.advanced_threat_protection_enabled ? "Enabled" : "Disabled"
     }
   }
+
+  depends_on = [
+    azapi_resource_action.sql_managed_instance_patch_identities,
+  ]
 }
 
 resource "azurerm_monitor_diagnostic_setting" "this" {

@@ -34,5 +34,9 @@ resource "azurerm_mssql_managed_database" "this" {
       update = timeouts.value.update
     }
   }
+
+  depends_on = [
+    azapi_resource_action.sql_advanced_threat_protection,
+  ]
 }
 
