@@ -50,7 +50,7 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = "japaneast" #module.regions.regions[random_integer.region_index.result].name
+  location = "eastus" #module.regions.regions[random_integer.region_index.result].name
   name     = module.naming.resource_group.name_unique
 }
 
@@ -253,7 +253,7 @@ module "sqlmi_test" {
     user_assigned_resource_ids = [azurerm_user_assigned_identity.uami.id]
   }
   timeouts = {
-    create = "30m"
+    create = "60m"
   }
 
   depends_on = [
