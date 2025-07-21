@@ -218,10 +218,7 @@ resource "azurerm_subnet_route_table_association" "this" {
 }
 
 resource "random_password" "myadminpassword" {
-  length = 16
-  keepers = {
-    trigger = timestamp()
-  }
+  length           = 16
   override_special = "@#%*()-_=+[]{}:?"
   special          = true
 }
