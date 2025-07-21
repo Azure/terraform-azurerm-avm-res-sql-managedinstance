@@ -249,9 +249,6 @@ module "sqlmi_test" {
     system_assigned            = true
     user_assigned_resource_ids = [azurerm_user_assigned_identity.uami.id]
   }
-  timeouts = {
-    create = "60m"
-  }
 
   depends_on = [
     azurerm_subnet_network_security_group_association.this,
