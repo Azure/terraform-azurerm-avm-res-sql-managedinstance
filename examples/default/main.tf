@@ -1,5 +1,6 @@
 terraform {
   required_version = ">= 1.9, < 2.0"
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -25,7 +26,7 @@ provider "azurerm" {
 # This allows us to randomize the region for the resource group.
 module "regions" {
   source  = "Azure/regions/azurerm"
-  version = "~> 0.3"
+  version = "0.8.2"
 }
 
 # This allows us to randomize the region for the resource group.
@@ -38,12 +39,12 @@ resource "random_integer" "region_index" {
 # This ensures we have unique CAF compliant names for our resources.
 module "naming" {
   source  = "Azure/naming/azurerm"
-  version = "~> 0.3"
+  version = "0.4.2"
 }
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = "japaneast" #module.regions.regions[random_integer.region_index.result].name
+  location = "westus2"
   name     = module.naming.resource_group.name_unique
 }
 
@@ -167,10 +168,10 @@ resource "azurerm_network_security_rule" "deny_all_outbound" {
 }
 
 resource "azurerm_virtual_network" "this" {
-  address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.this.location
   name                = "vnet-mi"
   resource_group_name = azurerm_resource_group.this.name
+  address_space       = ["10.0.0.0/16"]
 }
 
 resource "azurerm_subnet" "this" {
@@ -211,10 +212,7 @@ resource "azurerm_subnet_route_table_association" "this" {
 }
 
 resource "random_password" "myadminpassword" {
-  length = 16
-  keepers = {
-    trigger = timestamp()
-  }
+  length           = 16
   override_special = "@#%*()-_=+[]{}:?"
   special          = true
 }
@@ -228,14 +226,13 @@ resource "azurerm_user_assigned_identity" "uami" {
 # This is the module call
 module "sqlmi_test" {
   source = "../../"
-  # source             = "Azure/avm-res-sql-managedinstance/azurerm"
-  # ...
-  location                     = azurerm_resource_group.this.location
-  name                         = module.naming.mssql_managed_instance.name_unique
-  resource_group_name          = azurerm_resource_group.this.name
+
   administrator_login          = "myspecialsqladmin"
   administrator_login_password = random_password.myadminpassword.result
   license_type                 = "LicenseIncluded"
+  location                     = azurerm_resource_group.this.location
+  name                         = module.naming.mssql_managed_instance.name_unique
+  resource_group_name          = azurerm_resource_group.this.name
   sku_name                     = "GP_Gen5"
   storage_size_in_gb           = 32
   subnet_id                    = azurerm_subnet.this.id
@@ -244,6 +241,7 @@ module "sqlmi_test" {
     system_assigned            = true
     user_assigned_resource_ids = [azurerm_user_assigned_identity.uami.id]
   }
+  zone_redundant_enabled = false
 
   depends_on = [
     azurerm_subnet_network_security_group_association.this,

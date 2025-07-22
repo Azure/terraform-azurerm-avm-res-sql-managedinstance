@@ -4,6 +4,7 @@ resource "azurerm_mssql_managed_database" "this" {
   managed_instance_id       = azurerm_mssql_managed_instance.this.id
   name                      = each.value.name
   short_term_retention_days = each.value.short_term_retention_days
+  tags                      = each.value.tags
 
   dynamic "long_term_retention_policy" {
     for_each = each.value.long_term_retention_policy == null ? [] : [each.value.long_term_retention_policy]
@@ -33,5 +34,9 @@ resource "azurerm_mssql_managed_database" "this" {
       update = timeouts.value.update
     }
   }
+
+  depends_on = [
+    azapi_resource_action.sql_advanced_threat_protection,
+  ]
 }
 

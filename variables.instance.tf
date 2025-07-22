@@ -1,4 +1,3 @@
-
 variable "administrator_login" {
   type        = string
   description = "(Required) The administrator login name for the new SQL Managed Instance. Changing this forces a new resource to be created."
@@ -10,13 +9,6 @@ variable "administrator_login_password" {
   description = "(Required) The password associated with the `administrator_login` user. Needs to comply with Azure's [Password Policy](https://msdn.microsoft.com/library/ms161959.aspx)"
   nullable    = false
   sensitive   = true
-}
-
-variable "enable_advanced_threat_protection" {
-  type        = bool
-  default     = true
-  description = "(Optional) Whether to enabled Defender for SQL Advanced Threat Protection."
-  nullable    = false
 }
 
 variable "license_type" {
@@ -46,6 +38,43 @@ variable "subnet_id" {
 variable "vcores" {
   type        = number
   description = "(Required) Number of cores that should be assigned to the SQL Managed Instance. Values can be `8`, `16`, or `24` for Gen4 SKUs, or `4`, `6`, `8`, `10`, `12`, `16`, `20`, `24`, `32`, `40`, `48`, `56`, `64`, `80`, `96` or `128` for Gen5 SKUs."
+  nullable    = false
+}
+
+variable "active_directory_administrator" {
+  type = object({
+    azuread_authentication_only = optional(bool)
+    login_username              = optional(string)
+    object_id                   = optional(string)
+    tenant_id                   = optional(string)
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+  default     = {}
+  description = <<-DESCRIPTION
+ - `azuread_authentication_only` - (Optional) When `true`, only permit logins from AAD users and administrators. When `false`, also allow local database users.
+ - `login_username` - (Required) The login name of the principal to set as the Managed Instance Administrator.
+ - `object_id` - (Required) The Object ID of the principal to set as the Managed Instance Administrator.
+ - `tenant_id` - (Required) The Azure Active Directory Tenant ID.
+
+ ---
+ `timeouts` block supports the following:
+ - `create` - (Defaults to 30 minutes) Used when creating the SQL Active Directory Administrator.
+ - `delete` - (Defaults to 30 minutes) Used when deleting the SQL Active Directory Administrator.
+ - `read` - (Defaults to 5 minutes) Used when retrieving the SQL Active Directory Administrator.
+ - `update` - (Defaults to 30 minutes) Used when updating the SQL Active Directory Administrator.
+DESCRIPTION
+  nullable    = false
+}
+
+variable "advanced_threat_protection_enabled" {
+  type        = bool
+  default     = true
+  description = "(Optional) Whether to enabled Defender for SQL Advanced Threat Protection."
   nullable    = false
 }
 
@@ -83,6 +112,58 @@ variable "public_data_endpoint_enabled" {
   type        = bool
   default     = null
   description = "(Optional) Is the public data endpoint enabled? Default value is `false`."
+}
+
+variable "security_alert_policy" {
+  type = object({
+    disabled_alerts              = optional(set(string))
+    email_account_admins_enabled = optional(bool)
+    email_addresses              = optional(set(string))
+    enabled                      = optional(bool)
+    retention_days               = optional(number)
+    storage_account_access_key   = optional(string)
+    storage_endpoint             = optional(string)
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+  default     = {}
+  description = <<-DESCRIPTION
+ - `disabled_alerts` - (Optional) Specifies an array of alerts that are disabled. Possible values are `Sql_Injection`, `Sql_Injection_Vulnerability`, `Access_Anomaly`, `Data_Exfiltration`, `Unsafe_Action` and `Brute_Force`.
+ - `email_account_admins_enabled` - (Optional) Boolean flag which specifies if the alert is sent to the account administrators or not. Defaults to `false`.
+ - `email_addresses` - (Optional) Specifies an array of email addresses to which the alert is sent.
+ - `enabled` - (Optional) Specifies the state of the Security Alert Policy, whether it is enabled or disabled. Possible values are `true`, `false`.
+ - `retention_days` - (Optional) Specifies the number of days to keep in the Threat Detection audit logs. Defaults to `0`.
+ - `storage_account_access_key` - (Optional) Specifies the identifier key of the Threat Detection audit storage account. This is mandatory when you use `storage_endpoint` to specify a storage account blob endpoint.
+ - `storage_endpoint` - (Optional) Specifies the blob storage endpoint (e.g. https://example.blob.core.windows.net). This blob storage will hold all Threat Detection audit logs.
+
+ ---
+ `timeouts` block supports the following:
+ - `create` - (Defaults to 30 minutes) Used when creating the MS SQL Managed Instance Security Alert Policy.
+ - `delete` - (Defaults to 30 minutes) Used when deleting the MS SQL Managed Instance Security Alert Policy.
+ - `read` - (Defaults to 5 minutes) Used when retrieving the MS SQL Managed Instance Security Alert Policy.
+ - `update` - (Defaults to 30 minutes) Used when updating the MS SQL Managed Instance Security Alert Policy.
+DESCRIPTION
+  nullable    = false
+}
+
+variable "storage_account_resource_id" {
+  type        = string
+  default     = null
+  description = <<-DESCRIPTION
+(Optional) Storage Account to store vulnerability assessments.
+
+The System Assigned Managed Identity will be granted Storage Blob Data Contributor over this storage account.
+
+Note these limitations documented in Microsoft Learn - <https://learn.microsoft.com/en-us/azure/azure-sql/database/sql-database-vulnerability-assessment-storage?view=azuresql#store-va-scan-results-for-azure-sql-managed-instance-in-a-storage-account-that-can-be-accessed-behind-a-firewall-or-vnet>
+
+* User Assigned MIs are not supported
+* The storage account firewall public network access must be allowed.  If "Enabled from selected virtual networks and IP addresses" is set (recommended), the SQL MI subnet ID must be added to the storage account firewall.
+
+DESCRIPTION
 }
 
 variable "storage_account_type" {
@@ -124,10 +205,11 @@ variable "transparent_data_encryption" {
       update = optional(string)
     }))
   })
+  default     = {}
   description = <<-DESCRIPTION
  - `auto_rotation_enabled` - (Optional) When enabled, the SQL Managed Instance will continuously check the key vault for any new versions of the key being used as the TDE protector. If a new version of the key is detected, the TDE protector on the SQL Managed Instance will be automatically rotated to the latest key version within 60 minutes.
  - `key_vault_key_id` - (Optional) To use customer managed keys from Azure Key Vault, provide the AKV Key ID. To use service managed keys, omit this field.
- 
+
  ---
  `timeouts` block supports the following:
  - `create` - (Defaults to 30 minutes) Used when creating the MSSQL.
@@ -135,90 +217,6 @@ variable "transparent_data_encryption" {
  - `read` - (Defaults to 5 minutes) Used when retrieving the MSSQL.
  - `update` - (Defaults to 30 minutes) Used when updating the MSSQL.
 DESCRIPTION
-  default     = {}
-  nullable    = false
-}
-
-variable "active_directory_administrator" {
-  type = object({
-    azuread_authentication_only = optional(bool)
-    login_username              = optional(string)
-    object_id                   = optional(string)
-    tenant_id                   = optional(string)
-    timeouts = optional(object({
-      create = optional(string)
-      delete = optional(string)
-      read   = optional(string)
-      update = optional(string)
-    }))
-  })
-  description = <<-DESCRIPTION
- - `azuread_authentication_only` - (Optional) When `true`, only permit logins from AAD users and administrators. When `false`, also allow local database users.
- - `login_username` - (Required) The login name of the principal to set as the Managed Instance Administrator.
- - `object_id` - (Required) The Object ID of the principal to set as the Managed Instance Administrator.
- - `tenant_id` - (Required) The Azure Active Directory Tenant ID.
-
- ---
- `timeouts` block supports the following:
- - `create` - (Defaults to 30 minutes) Used when creating the SQL Active Directory Administrator.
- - `delete` - (Defaults to 30 minutes) Used when deleting the SQL Active Directory Administrator.
- - `read` - (Defaults to 5 minutes) Used when retrieving the SQL Active Directory Administrator.
- - `update` - (Defaults to 30 minutes) Used when updating the SQL Active Directory Administrator.
-DESCRIPTION
-  default     = {}
-  nullable    = false
-}
-
-variable "security_alert_policy" {
-  type = object({
-    disabled_alerts              = optional(set(string))
-    email_account_admins_enabled = optional(bool)
-    email_addresses              = optional(set(string))
-    enabled                      = optional(bool)
-    retention_days               = optional(number)
-    storage_account_access_key   = optional(string)
-    storage_endpoint             = optional(string)
-    timeouts = optional(object({
-      create = optional(string)
-      delete = optional(string)
-      read   = optional(string)
-      update = optional(string)
-    }))
-  })
-  description = <<-DESCRIPTION
- - `disabled_alerts` - (Optional) Specifies an array of alerts that are disabled. Possible values are `Sql_Injection`, `Sql_Injection_Vulnerability`, `Access_Anomaly`, `Data_Exfiltration`, `Unsafe_Action` and `Brute_Force`.
- - `email_account_admins_enabled` - (Optional) Boolean flag which specifies if the alert is sent to the account administrators or not. Defaults to `false`.
- - `email_addresses` - (Optional) Specifies an array of email addresses to which the alert is sent.
- - `enabled` - (Optional) Specifies the state of the Security Alert Policy, whether it is enabled or disabled. Possible values are `true`, `false`.
- - `retention_days` - (Optional) Specifies the number of days to keep in the Threat Detection audit logs. Defaults to `0`.
- - `storage_account_access_key` - (Optional) Specifies the identifier key of the Threat Detection audit storage account. This is mandatory when you use `storage_endpoint` to specify a storage account blob endpoint.
- - `storage_endpoint` - (Optional) Specifies the blob storage endpoint (e.g. https://example.blob.core.windows.net). This blob storage will hold all Threat Detection audit logs.
-
- ---
- `timeouts` block supports the following:
- - `create` - (Defaults to 30 minutes) Used when creating the MS SQL Managed Instance Security Alert Policy.
- - `delete` - (Defaults to 30 minutes) Used when deleting the MS SQL Managed Instance Security Alert Policy.
- - `read` - (Defaults to 5 minutes) Used when retrieving the MS SQL Managed Instance Security Alert Policy.
- - `update` - (Defaults to 30 minutes) Used when updating the MS SQL Managed Instance Security Alert Policy.
-DESCRIPTION
-  default     = {}
-  nullable    = false
-}
-
-variable "storage_account_resource_id" {
-  type        = string
-  default     = null
-  description = <<-DESCRIPTION
-(Optional) Storage Account to store vulnerability assessments.  
-
-The System Assigned Managed Identity will be granted Storage Blob Data Contributor over this storage account.  
-
-Note these limitations documented in Microsoft Learn - <https://learn.microsoft.com/en-us/azure/azure-sql/database/sql-database-vulnerability-assessment-storage?view=azuresql#store-va-scan-results-for-azure-sql-managed-instance-in-a-storage-account-that-can-be-accessed-behind-a-firewall-or-vnet>
-
-* User Assigned MIs are not supported
-* The storage account firewall public network access must be allowed.  If "Enabled from selected virtual networks and IP addresses" is set (recommended), the SQL MI subnet ID must be added to the storage account firewall.
-
-DESCRIPTION  
 }
 
 variable "vulnerability_assessment" {
@@ -238,6 +236,7 @@ variable "vulnerability_assessment" {
       update = optional(string)
     }))
   })
+  default     = null
   description = <<-DESCRIPTION
  - `storage_account_access_key` - (Optional) Specifies the identifier key of the storage account for vulnerability assessment scan results. If `storage_container_sas_key` isn't specified, `storage_account_access_key` is required.  Set to `null` if the storage account is protected by a resource firewall.
  - `storage_container_path` - (Required) A blob storage container path to hold the scan results (e.g. <https://myStorage.blob.core.windows.net/VaScans/>).
@@ -256,7 +255,6 @@ variable "vulnerability_assessment" {
  - `read` - (Defaults to 5 minutes) Used when retrieving the Vulnerability Assessment.
  - `update` - (Defaults to 60 minutes) Used when updating the Vulnerability Assessment.
 DESCRIPTION
-  default     = null
 }
 
 variable "zone_redundant_enabled" {
