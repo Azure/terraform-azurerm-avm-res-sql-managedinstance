@@ -186,6 +186,11 @@ variable "retry" {
       interval_seconds     = optional(number)
       max_interval_seconds = optional(number)
     }), {})
+    sql_advanced_threat_protection = optional(object({
+      error_message_regex  = optional(list(string))
+      interval_seconds     = optional(number)
+      max_interval_seconds = optional(number)
+    }), {})
   })
   default     = {}
   description = <<DESCRIPTION
@@ -243,6 +248,12 @@ variable "timeout" {
       update = optional(string)
     }), {})
     sql_managed_instance_patch_identities = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }), {})
+    sql_advanced_threat_protection = optional(object({
       create = optional(string)
       delete = optional(string)
       read   = optional(string)

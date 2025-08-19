@@ -212,6 +212,18 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   locks = [
     azurerm_mssql_managed_instance.this.id
   ]
+  retry = {
+    error_message_regex  = var.retry.sql_managed_instance_patch_identities.error_message_regex
+    interval_seconds     = var.retry.sql_managed_instance_patch_identities.interval_seconds
+    max_interval_seconds = var.retry.sql_managed_instance_patch_identities.max_interval_seconds
+  }
+
+  timeouts {
+    create = var.timeout.sql_managed_instance_patch_identities.create
+    delete = var.timeout.sql_managed_instance_patch_identities.delete
+    read   = var.timeout.sql_managed_instance_patch_identities.read
+    update = var.timeout.sql_managed_instance_patch_identities.update
+  }
 
   depends_on = [
     azapi_resource_action.mssql_managed_instance_vulnerability_assessment,
@@ -241,6 +253,18 @@ resource "azapi_resource_action" "sql_advanced_threat_protection" {
   locks = [
     azurerm_mssql_managed_instance.this.id
   ]
+  retry = {
+    error_message_regex  = var.retry.sql_advanced_threat_protection.error_message_regex
+    interval_seconds     = var.retry.sql_advanced_threat_protection.interval_seconds
+    max_interval_seconds = var.retry.sql_advanced_threat_protection.max_interval_seconds
+  }
+
+  timeouts {
+    create = var.timeout.sql_advanced_threat_protection.create
+    delete = var.timeout.sql_advanced_threat_protection.delete
+    read   = var.timeout.sql_advanced_threat_protection.read
+    update = var.timeout
+  }
 
   depends_on = [
     azapi_resource_action.sql_managed_instance_patch_identities,

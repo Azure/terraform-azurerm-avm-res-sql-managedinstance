@@ -276,8 +276,8 @@ Default: `null`
 
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
-Description: This variable controls whether or not telemetry is enabled for the module.
-For more information see <https://aka.ms/avm/telemetryinfo>.
+Description: This variable controls whether or not telemetry is enabled for the module.  
+For more information see <https://aka.ms/avm/telemetryinfo>.  
 If it is set to false, then no telemetry will be collected.
 
 Type: `bool`
@@ -286,7 +286,7 @@ Default: `true`
 
 ### <a name="input_failover_group"></a> [failover\_group](#input\_failover\_group)
 
-Description:
+Description:   
 Map of failover groups.  There can only be one failover group in the map.
 
  - `location` - (Required) The Azure Region where the Managed Instance Failover Group should exist. Changing this forces a new resource to be created.
@@ -464,7 +464,7 @@ Default: `null`
 
 ### <a name="input_retry"></a> [retry](#input\_retry)
 
-Description: The AzAPI resource retry configuration, per resource type.
+Description: The AzAPI resource retry configuration, per resource type.  
 Will retry up to the resource timeout, see `var.timeout`.
 
 Each resource has the following attributes:
@@ -488,6 +488,11 @@ object({
       error_message_regex = optional(list(string), [
         "ConflictingServerOperation", # see #54
       ])
+      interval_seconds     = optional(number)
+      max_interval_seconds = optional(number)
+    }), {})
+    sql_advanced_threat_protection = optional(object({
+      error_message_regex  = optional(list(string))
       interval_seconds     = optional(number)
       max_interval_seconds = optional(number)
     }), {})
@@ -598,7 +603,7 @@ Default: `null`
 
 ### <a name="input_timeout"></a> [timeout](#input\_timeout)
 
-Description: The resource-specific timeout configuration.
+Description: The resource-specific timeout configuration.  
 Values are a valid timespan, e.g. `1m`, `30s`, `5m30s`.
 
 Type:
@@ -612,6 +617,12 @@ object({
       update = optional(string)
     }), {})
     sql_managed_instance_patch_identities = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }), {})
+    sql_advanced_threat_protection = optional(object({
       create = optional(string)
       delete = optional(string)
       read   = optional(string)
