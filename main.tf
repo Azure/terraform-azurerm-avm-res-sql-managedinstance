@@ -83,11 +83,7 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
   locks = [
     azurerm_mssql_managed_instance.this.id
   ]
-  retry = {
-    error_message_regex  = var.retry.mssql_managed_instance_security_alert_policy.error_message_regex
-    interval_seconds     = var.retry.mssql_managed_instance_security_alert_policy.interval_seconds
-    max_interval_seconds = var.retry.mssql_managed_instance_security_alert_policy.max_interval_seconds
-  }
+  retry = var.retry.mssql_managed_instance_security_alert_policy
 
   timeouts {
     create = var.timeout.mssql_managed_instance_security_alert_policy.create
@@ -212,11 +208,7 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   locks = [
     azurerm_mssql_managed_instance.this.id
   ]
-  retry = {
-    error_message_regex  = var.retry.sql_managed_instance_patch_identities.error_message_regex
-    interval_seconds     = var.retry.sql_managed_instance_patch_identities.interval_seconds
-    max_interval_seconds = var.retry.sql_managed_instance_patch_identities.max_interval_seconds
-  }
+  retry = var.retry.sql_managed_instance_patch_identities
 
   timeouts {
     create = var.timeout.sql_managed_instance_patch_identities.create
@@ -253,11 +245,7 @@ resource "azapi_resource_action" "sql_advanced_threat_protection" {
   locks = [
     azurerm_mssql_managed_instance.this.id
   ]
-  retry = {
-    error_message_regex  = var.retry.sql_advanced_threat_protection.error_message_regex
-    interval_seconds     = var.retry.sql_advanced_threat_protection.interval_seconds
-    max_interval_seconds = var.retry.sql_advanced_threat_protection.max_interval_seconds
-  }
+  retry = var.retry.sql_advanced_threat_protection
 
   timeouts {
     create = var.timeout.sql_advanced_threat_protection.create

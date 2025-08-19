@@ -178,19 +178,19 @@ variable "retry" {
       ])
       interval_seconds     = optional(number)
       max_interval_seconds = optional(number)
-    }), {})
+    }), null)
     sql_managed_instance_patch_identities = optional(object({
       error_message_regex = optional(list(string), [
         "ConflictingServerOperation", # see #54
       ])
       interval_seconds     = optional(number)
       max_interval_seconds = optional(number)
-    }), {})
+    }), null)
     sql_advanced_threat_protection = optional(object({
       error_message_regex  = optional(list(string))
       interval_seconds     = optional(number)
       max_interval_seconds = optional(number)
-    }), {})
+    }), null)
   })
   default     = {}
   description = <<DESCRIPTION
