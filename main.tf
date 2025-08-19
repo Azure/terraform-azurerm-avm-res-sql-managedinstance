@@ -263,7 +263,7 @@ resource "azapi_resource_action" "sql_advanced_threat_protection" {
     create = var.timeout.sql_advanced_threat_protection.create
     delete = var.timeout.sql_advanced_threat_protection.delete
     read   = var.timeout.sql_advanced_threat_protection.read
-    update = var.timeout
+    update = var.timeout.sql_advanced_threat_protection.update
   }
 
   depends_on = [
