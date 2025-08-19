@@ -42,7 +42,7 @@ A map of diagnostic settings to create on the Key Vault. The map key is delibera
 - `event_hub_authorization_rule_resource_id` - (Optional) The resource ID of the event hub authorization rule to send logs and metrics to.
 - `event_hub_name` - (Optional) The name of the event hub. If none is specified, the default event hub will be selected.
 - `marketplace_partner_resource_id` - (Optional) The full ARM resource ID of the Marketplace resource to which you would like to send Diagnostic LogsLogs.
-DESCRIPTION  
+DESCRIPTION
   nullable    = false
 
   validation {
@@ -68,6 +68,7 @@ This variable controls whether or not telemetry is enabled for the module.
 For more information see <https://aka.ms/avm/telemetryinfo>.
 If it is set to false, then no telemetry will be collected.
 DESCRIPTION
+  nullable    = false
 }
 
 variable "lock" {
@@ -169,6 +170,37 @@ variable "private_endpoints_manage_dns_zone_group" {
   nullable    = false
 }
 
+variable "retry" {
+  type = object({
+    mssql_managed_instance_security_alert_policy = optional(object({
+      error_message_regex = optional(list(string), [
+        "SqlServerAlertPolicyInProgress", # see #54
+      ])
+      interval_seconds     = optional(number)
+      max_interval_seconds = optional(number)
+    }), {})
+    sql_managed_instance_patch_identities = optional(object({
+      error_message_regex = optional(list(string), [
+        "ConflictingServerOperation", # see #54
+      ])
+      interval_seconds     = optional(number)
+      max_interval_seconds = optional(number)
+    }), {})
+  })
+  default     = {}
+  description = <<DESCRIPTION
+The AzAPI resource retry configuration, per resource type.
+Will retry up to the resource timeout, see `var.timeout`.
+
+Each resource has the following attributes:
+
+- `error_message_regex` - A list of regular expressions to match error messages for retrying the request.
+- `interval_seconds` - The interval in seconds between retry attempts.
+- `max_interval_seconds` - The maximum interval in seconds between retry attempts.
+DESCRIPTION
+  nullable    = false
+}
+
 variable "role_assignments" {
   type = map(object({
     role_definition_id_or_name             = string
@@ -200,4 +232,27 @@ variable "tags" {
   type        = map(string)
   default     = null
   description = "(Optional) Tags of the resource."
+}
+
+variable "timeout" {
+  type = object({
+    mssql_managed_instance_security_alert_policy = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }), {})
+    sql_managed_instance_patch_identities = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }), {})
+  })
+  default     = {}
+  description = <<DESCRIPTION
+The resource-specific timeout configuration.
+Values are a valid timespan, e.g. `1m`, `30s`, `5m30s`.
+DESCRIPTION
+  nullable    = false
 }

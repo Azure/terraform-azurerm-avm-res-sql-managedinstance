@@ -80,6 +80,21 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
       storageEndpoint         = try(var.security_alert_policy.storage_endpoint, null)
     }
   }
+  locks = [
+    azurerm_mssql_managed_instance.this.id
+  ]
+  retry = {
+    error_message_regex  = var.retry.mssql_managed_instance_security_alert_policy.error_message_regex
+    interval_seconds     = var.retry.mssql_managed_instance_security_alert_policy.interval_seconds
+    max_interval_seconds = var.retry.mssql_managed_instance_security_alert_policy.max_interval_seconds
+  }
+
+  timeouts {
+    create = var.timeout.mssql_managed_instance_security_alert_policy.create
+    delete = var.timeout.mssql_managed_instance_security_alert_policy.delete
+    read   = var.timeout.mssql_managed_instance_security_alert_policy.read
+    update = var.timeout.mssql_managed_instance_security_alert_policy.update
+  }
 
   depends_on = [
     azurerm_mssql_managed_instance_active_directory_administrator.this,
@@ -132,6 +147,9 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
       } : null
     }
   }
+  locks = [
+    azurerm_mssql_managed_instance.this.id
+  ]
 
   depends_on = [
     azurerm_mssql_managed_instance_transparent_data_encryption.this,
@@ -191,6 +209,9 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
       primaryUserAssignedIdentityId = length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0] : null
     }
   }
+  locks = [
+    azurerm_mssql_managed_instance.this.id
+  ]
 
   depends_on = [
     azapi_resource_action.mssql_managed_instance_vulnerability_assessment,
@@ -217,6 +238,9 @@ resource "azapi_resource_action" "sql_advanced_threat_protection" {
       state = var.advanced_threat_protection_enabled ? "Enabled" : "Disabled"
     }
   }
+  locks = [
+    azurerm_mssql_managed_instance.this.id
+  ]
 
   depends_on = [
     azapi_resource_action.sql_managed_instance_patch_identities,
@@ -257,5 +281,3 @@ resource "azurerm_monitor_diagnostic_setting" "this" {
     }
   }
 }
-
-

@@ -26,7 +26,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.9, < 2.0)
 
-- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.0)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.4)
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
 
@@ -38,10 +38,10 @@ The following requirements are needed by this module:
 
 The following resources are used by this module:
 
-- [azapi_resource_action.mssql_managed_instance_security_alert_policy](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource_action) (resource)
-- [azapi_resource_action.mssql_managed_instance_vulnerability_assessment](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource_action) (resource)
-- [azapi_resource_action.sql_advanced_threat_protection](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource_action) (resource)
-- [azapi_resource_action.sql_managed_instance_patch_identities](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_resource_action.mssql_managed_instance_security_alert_policy](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_resource_action.mssql_managed_instance_vulnerability_assessment](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_resource_action.sql_advanced_threat_protection](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_resource_action.sql_managed_instance_patch_identities](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
 - [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
 - [azurerm_monitor_diagnostic_setting.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
 - [azurerm_mssql_managed_database.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_database) (resource)
@@ -56,8 +56,8 @@ The following resources are used by this module:
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [modtm_telemetry.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/resources/telemetry) (resource)
 - [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
-- [azapi_resource.identity](https://registry.terraform.io/providers/azure/azapi/latest/docs/data-sources/resource) (data source)
-- [azurerm_client_config.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
+- [azapi_client_config.telemetry](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
+- [azapi_resource.identity](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/resource) (data source)
 - [azurerm_resource_group.parent](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resource_group) (data source)
 - [modtm_module_source.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/data-sources/module_source) (data source)
 
@@ -276,8 +276,8 @@ Default: `null`
 
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
-Description: This variable controls whether or not telemetry is enabled for the module.  
-For more information see <https://aka.ms/avm/telemetryinfo>.  
+Description: This variable controls whether or not telemetry is enabled for the module.
+For more information see <https://aka.ms/avm/telemetryinfo>.
 If it is set to false, then no telemetry will be collected.
 
 Type: `bool`
@@ -286,7 +286,7 @@ Default: `true`
 
 ### <a name="input_failover_group"></a> [failover\_group](#input\_failover\_group)
 
-Description:   
+Description:
 Map of failover groups.  There can only be one failover group in the map.
 
  - `location` - (Required) The Azure Region where the Managed Instance Failover Group should exist. Changing this forces a new resource to be created.
@@ -462,6 +462,40 @@ Type: `bool`
 
 Default: `null`
 
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: The AzAPI resource retry configuration, per resource type.
+Will retry up to the resource timeout, see `var.timeout`.
+
+Each resource has the following attributes:
+
+- `error_message_regex` - A list of regular expressions to match error messages for retrying the request.
+- `interval_seconds` - The interval in seconds between retry attempts.
+- `max_interval_seconds` - The maximum interval in seconds between retry attempts.
+
+Type:
+
+```hcl
+object({
+    mssql_managed_instance_security_alert_policy = optional(object({
+      error_message_regex = optional(list(string), [
+        "SqlServerAlertPolicyInProgress", # see #54
+      ])
+      interval_seconds     = optional(number)
+      max_interval_seconds = optional(number)
+    }), {})
+    sql_managed_instance_patch_identities = optional(object({
+      error_message_regex = optional(list(string), [
+        "ConflictingServerOperation", # see #54
+      ])
+      interval_seconds     = optional(number)
+      max_interval_seconds = optional(number)
+    }), {})
+  })
+```
+
+Default: `{}`
+
 ### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
 
 Description: A map of role assignments to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
@@ -561,6 +595,32 @@ Description: (Optional) Tags of the resource.
 Type: `map(string)`
 
 Default: `null`
+
+### <a name="input_timeout"></a> [timeout](#input\_timeout)
+
+Description: The resource-specific timeout configuration.
+Values are a valid timespan, e.g. `1m`, `30s`, `5m30s`.
+
+Type:
+
+```hcl
+object({
+    mssql_managed_instance_security_alert_policy = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }), {})
+    sql_managed_instance_patch_identities = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }), {})
+  })
+```
+
+Default: `{}`
 
 ### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
 
