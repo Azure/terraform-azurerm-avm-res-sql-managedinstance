@@ -80,6 +80,17 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
       storageEndpoint         = try(var.security_alert_policy.storage_endpoint, null)
     }
   }
+  locks = [
+    azurerm_mssql_managed_instance.this.id
+  ]
+  retry = var.retry.mssql_managed_instance_security_alert_policy
+
+  timeouts {
+    create = var.timeout.mssql_managed_instance_security_alert_policy.create
+    delete = var.timeout.mssql_managed_instance_security_alert_policy.delete
+    read   = var.timeout.mssql_managed_instance_security_alert_policy.read
+    update = var.timeout.mssql_managed_instance_security_alert_policy.update
+  }
 
   depends_on = [
     azurerm_mssql_managed_instance_active_directory_administrator.this,
@@ -132,6 +143,9 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
       } : null
     }
   }
+  locks = [
+    azurerm_mssql_managed_instance.this.id
+  ]
 
   depends_on = [
     azurerm_mssql_managed_instance_transparent_data_encryption.this,
@@ -191,6 +205,17 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
       primaryUserAssignedIdentityId = length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0] : null
     }
   }
+  locks = [
+    azurerm_mssql_managed_instance.this.id
+  ]
+  retry = var.retry.sql_managed_instance_patch_identities
+
+  timeouts {
+    create = var.timeout.sql_managed_instance_patch_identities.create
+    delete = var.timeout.sql_managed_instance_patch_identities.delete
+    read   = var.timeout.sql_managed_instance_patch_identities.read
+    update = var.timeout.sql_managed_instance_patch_identities.update
+  }
 
   depends_on = [
     azapi_resource_action.mssql_managed_instance_vulnerability_assessment,
@@ -216,6 +241,17 @@ resource "azapi_resource_action" "sql_advanced_threat_protection" {
     properties = {
       state = var.advanced_threat_protection_enabled ? "Enabled" : "Disabled"
     }
+  }
+  locks = [
+    azurerm_mssql_managed_instance.this.id
+  ]
+  retry = var.retry.sql_advanced_threat_protection
+
+  timeouts {
+    create = var.timeout.sql_advanced_threat_protection.create
+    delete = var.timeout.sql_advanced_threat_protection.delete
+    read   = var.timeout.sql_advanced_threat_protection.read
+    update = var.timeout.sql_advanced_threat_protection.update
   }
 
   depends_on = [
@@ -257,5 +293,3 @@ resource "azurerm_monitor_diagnostic_setting" "this" {
     }
   }
 }
-
-
