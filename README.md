@@ -462,6 +462,45 @@ Type: `bool`
 
 Default: `null`
 
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: The AzAPI resource retry configuration, per resource type.  
+Will retry up to the resource timeout, see `var.timeout`.
+
+Each resource has the following attributes:
+
+- `error_message_regex` - A list of regular expressions to match error messages for retrying the request.
+- `interval_seconds` - The interval in seconds between retry attempts.
+- `max_interval_seconds` - The maximum interval in seconds between retry attempts.
+
+Type:
+
+```hcl
+object({
+    mssql_managed_instance_security_alert_policy = optional(object({
+      error_message_regex = optional(list(string), [
+        "SqlServerAlertPolicyInProgress", # see #54
+      ])
+      interval_seconds     = optional(number)
+      max_interval_seconds = optional(number)
+    }), null)
+    sql_managed_instance_patch_identities = optional(object({
+      error_message_regex = optional(list(string), [
+        "ConflictingServerOperation", # see #54
+      ])
+      interval_seconds     = optional(number)
+      max_interval_seconds = optional(number)
+    }), null)
+    sql_advanced_threat_protection = optional(object({
+      error_message_regex  = optional(list(string))
+      interval_seconds     = optional(number)
+      max_interval_seconds = optional(number)
+    }), null)
+  })
+```
+
+Default: `{}`
+
 ### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
 
 Description: A map of role assignments to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
@@ -561,6 +600,38 @@ Description: (Optional) Tags of the resource.
 Type: `map(string)`
 
 Default: `null`
+
+### <a name="input_timeout"></a> [timeout](#input\_timeout)
+
+Description: The resource-specific timeout configuration.  
+Values are a valid timespan, e.g. `1m`, `30s`, `5m30s`.
+
+Type:
+
+```hcl
+object({
+    mssql_managed_instance_security_alert_policy = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }), {})
+    sql_managed_instance_patch_identities = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }), {})
+    sql_advanced_threat_protection = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }), {})
+  })
+```
+
+Default: `{}`
 
 ### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
 
