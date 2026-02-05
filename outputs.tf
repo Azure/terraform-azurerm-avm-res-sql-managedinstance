@@ -3,6 +3,16 @@ output "identity" {
   value       = try(jsondecode(data.azapi_resource.identity.output).identity, null)
 }
 
+output "is_general_purpose_v2" {
+  description = "Whether the SQL Managed Instance is using the Next-gen General Purpose (GPv2) service tier."
+  value       = try(jsondecode(data.azapi_resource.identity.output).properties.isGeneralPurposeV2, false)
+}
+
+output "memory_size_in_gb" {
+  description = "The actual memory size in GB allocated to the SQL Managed Instance."
+  value       = try(jsondecode(data.azapi_resource.identity.output).properties.memorySizeInGB, null)
+}
+
 output "private_endpoints" {
   description = <<DESCRIPTION
   A map of the private endpoints created.
@@ -27,17 +37,7 @@ output "service_principal" {
   value       = try(jsondecode(data.azapi_resource.identity.output).properties.servicePrincipal, null)
 }
 
-output "is_general_purpose_v2" {
-  description = "Whether the SQL Managed Instance is using the Next-gen General Purpose (GPv2) service tier."
-  value       = try(jsondecode(data.azapi_resource.identity.output).properties.isGeneralPurposeV2, false)
-}
-
 output "storage_iops" {
   description = "The actual storage IOPS allocated to the SQL Managed Instance."
   value       = try(jsondecode(data.azapi_resource.identity.output).properties.storageIOps, null)
-}
-
-output "memory_size_in_gb" {
-  description = "The actual memory size in GB allocated to the SQL Managed Instance."
-  value       = try(jsondecode(data.azapi_resource.identity.output).properties.memorySizeInGB, null)
 }

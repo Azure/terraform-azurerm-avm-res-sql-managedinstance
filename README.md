@@ -329,6 +329,26 @@ map(object({
 
 Default: `{}`
 
+### <a name="input_is_general_purpose_v2"></a> [is\_general\_purpose\_v2](#input\_is\_general\_purpose\_v2)
+
+Description: (Optional) Whether or not this is a GPv2 (Next-gen General Purpose) variant of General Purpose edition.
+
+Next-gen General Purpose offers:
+- Up to 500 databases per instance and max 32 TB storage
+- 3 free IOPS per GB of storage
+- Independent scaling of vCores, memory, storage, and IOPS
+- Uses Elastic SAN for improved performance
+
+Note: Zone redundancy is not available for GPv2. Only available for General Purpose tier.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/service-tiers-next-gen-general-purpose-use
+
+Defaults to `false`.
+
+Type: `bool`
+
+Default: `false`
+
 ### <a name="input_lock"></a> [lock](#input\_lock)
 
 Description: Controls the Resource Lock configuration for this resource. The following properties can be specified:
@@ -372,6 +392,23 @@ object({
 ```
 
 Default: `{}`
+
+### <a name="input_memory_size_in_gb"></a> [memory\_size\_in\_gb](#input\_memory\_size\_in\_gb)
+
+Description: (Optional) Memory size in GB for the SQL Managed Instance.
+
+Allows flexible memory allocation, particularly useful for Next-gen General Purpose (GPv2) instances.  
+This is an improvement over standard General Purpose which has fixed memory allocation based on vCores.
+
+Flexible memory is currently available to locally redundant instances on premium-series hardware.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/resource-limits#flexible-memory
+
+Defaults to `null` (uses Azure's default based on vCores).
+
+Type: `number`
+
+Default: `null`
 
 ### <a name="input_minimum_tls_version"></a> [minimum\_tls\_version](#input\_minimum\_tls\_version)
 
@@ -452,7 +489,7 @@ Description: (Optional) Specifies how the SQL Managed Instance will be accessed.
 
 Type: `string`
 
-Default: `null`
+Default: `"Default"`
 
 ### <a name="input_public_data_endpoint_enabled"></a> [public\_data\_endpoint\_enabled](#input\_public\_data\_endpoint\_enabled)
 
@@ -606,6 +643,24 @@ Description: (Optional) Specifies the storage account type used to store backups
 Type: `string`
 
 Default: `"ZRS"`
+
+### <a name="input_storage_iops"></a> [storage\_iops](#input\_storage\_iops)
+
+Description: (Optional) Storage IOps for the SQL Managed Instance.
+
+Minimum value: 300. Maximum value: 80000. Increments of 1 IOps allowed.  
+Maximum value depends on the selected hardware family and number of vCores.
+
+For Next-gen General Purpose (GPv2), you receive 3 free IOPS per GB of reserved storage.  
+Example: A 1,024 GB instance receives 3,072 IOPS for free.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/resource-limits
+
+Defaults to `null` (uses Azure's default based on storage and vCores).
+
+Type: `number`
+
+Default: `null`
 
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
@@ -762,6 +817,14 @@ The following outputs are exported:
 
 Description: Managed identities for the SQL MI instance.  This is not available from the `resource` output because AzureRM doesn't yet support adding both User and System Assigned identities.
 
+### <a name="output_is_general_purpose_v2"></a> [is\_general\_purpose\_v2](#output\_is\_general\_purpose\_v2)
+
+Description: Whether the SQL Managed Instance is using the Next-gen General Purpose (GPv2) service tier.
+
+### <a name="output_memory_size_in_gb"></a> [memory\_size\_in\_gb](#output\_memory\_size\_in\_gb)
+
+Description: The actual memory size in GB allocated to the SQL Managed Instance.
+
 ### <a name="output_private_endpoints"></a> [private\_endpoints](#output\_private\_endpoints)
 
 Description:   A map of the private endpoints created.
@@ -777,6 +840,10 @@ Description: This is the resource ID of the resource.
 ### <a name="output_service_principal"></a> [service\_principal](#output\_service\_principal)
 
 Description: The system-assigned service principal details for the SQL Managed Instance. Required for Windows Authentication with Microsoft Entra ID.
+
+### <a name="output_storage_iops"></a> [storage\_iops](#output\_storage\_iops)
+
+Description: The actual storage IOPS allocated to the SQL Managed Instance.
 
 ## Modules
 
