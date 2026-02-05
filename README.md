@@ -570,6 +570,20 @@ object({
 
 Default: `{}`
 
+### <a name="input_service_principal_enabled"></a> [service\_principal\_enabled](#input\_service\_principal\_enabled)
+
+Description: (Optional) Whether to enable the system-assigned service principal for the SQL Managed Instance.
+
+This is required for Windows Authentication for Microsoft Entra principals using Kerberos.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/winauth-azuread-kerberos-managed-instance
+
+Defaults to `false`.
+
+Type: `bool`
+
+Default: `false`
+
 ### <a name="input_storage_account_resource_id"></a> [storage\_account\_resource\_id](#input\_storage\_account\_resource\_id)
 
 Description: (Optional) Storage Account to store vulnerability assessments.
@@ -759,6 +773,10 @@ Description: This is the full output for the resource.
 ### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
 
 Description: This is the resource ID of the resource.
+
+### <a name="output_service_principal"></a> [service\_principal](#output\_service\_principal)
+
+Description: The system-assigned service principal details for the SQL Managed Instance. Required for Windows Authentication with Microsoft Entra ID.
 
 ## Modules
 

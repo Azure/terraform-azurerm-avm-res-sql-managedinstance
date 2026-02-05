@@ -21,3 +21,8 @@ output "resource_id" {
   description = "This is the resource ID of the resource."
   value       = azurerm_mssql_managed_instance.this.id
 }
+
+output "service_principal" {
+  description = "The system-assigned service principal details for the SQL Managed Instance. Required for Windows Authentication with Microsoft Entra ID."
+  value       = try(jsondecode(data.azapi_resource.identity.output).properties.servicePrincipal, null)
+}

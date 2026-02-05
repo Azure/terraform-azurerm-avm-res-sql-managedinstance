@@ -189,21 +189,28 @@ resource "azurerm_role_assignment" "this" {
 # prevents system & user assigned identities being set at the same time.
 # https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
 resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
-  count = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0) ? 1 : 0
+  count = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0 || var.service_principal_enabled) ? 1 : 0
 
   method      = "PATCH"
   resource_id = azurerm_mssql_managed_instance.this.id
   type        = "Microsoft.Sql/managedInstances@2023-05-01-preview"
   body = {
-    identity = {
+    identity = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0) ? {
       type = local.managed_identities.system_assigned_user_assigned.this.type
       userAssignedIdentities = (local.managed_identities.system_assigned_user_assigned.this.type == "UserAssigned") || (local.managed_identities.system_assigned_user_assigned.this.type == "SystemAssigned, UserAssigned") ? {
         for id in tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) : id => {}
       } : null
-    },
-    properties = {
-      primaryUserAssignedIdentityId = length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0] : null
-    }
+    } : null,
+    properties = merge(
+      length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? {
+        primaryUserAssignedIdentityId = tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0]
+      } : {},
+      var.service_principal_enabled ? {
+        servicePrincipal = {
+          type = "SystemAssigned"
+        }
+      } : {}
+    )
   }
   locks = [
     azurerm_mssql_managed_instance.this.id

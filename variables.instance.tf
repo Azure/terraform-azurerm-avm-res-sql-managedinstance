@@ -150,6 +150,21 @@ DESCRIPTION
   nullable    = false
 }
 
+variable "service_principal_enabled" {
+  type        = bool
+  default     = false
+  description = <<-DESCRIPTION
+(Optional) Whether to enable the system-assigned service principal for the SQL Managed Instance.
+
+This is required for Windows Authentication for Microsoft Entra principals using Kerberos.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/winauth-azuread-kerberos-managed-instance
+
+Defaults to `false`.
+DESCRIPTION
+  nullable    = false
+}
+
 variable "storage_account_resource_id" {
   type        = string
   default     = null
