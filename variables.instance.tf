@@ -104,7 +104,7 @@ variable "minimum_tls_version" {
 
 variable "proxy_override" {
   type        = string
-  default     = null
+  default     = "Default"
   description = "(Optional) Specifies how the SQL Managed Instance will be accessed. Default value is `Default`. Valid values include `Default`, `Proxy`, and `Redirect`."
 }
 
@@ -276,4 +276,60 @@ variable "zone_redundant_enabled" {
   type        = bool
   default     = true
   description = "(Optional) If true, the SQL Managed Instance will be deployed with zone redundancy.  Defaults to `true`."
+}
+
+variable "is_general_purpose_v2" {
+  type        = bool
+  default     = false
+  description = <<-DESCRIPTION
+(Optional) Whether or not this is a GPv2 (Next-gen General Purpose) variant of General Purpose edition.
+
+Next-gen General Purpose offers:
+- Up to 500 databases per instance and max 32 TB storage
+- 3 free IOPS per GB of storage
+- Independent scaling of vCores, memory, storage, and IOPS
+- Uses Elastic SAN for improved performance
+
+Note: Zone redundancy is not available for GPv2. Only available for General Purpose tier.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/service-tiers-next-gen-general-purpose-use
+
+Defaults to `false`.
+DESCRIPTION
+  nullable    = false
+}
+
+variable "storage_iops" {
+  type        = number
+  default     = null
+  description = <<-DESCRIPTION
+(Optional) Storage IOps for the SQL Managed Instance.
+
+Minimum value: 300. Maximum value: 80000. Increments of 1 IOps allowed.
+Maximum value depends on the selected hardware family and number of vCores.
+
+For Next-gen General Purpose (GPv2), you receive 3 free IOPS per GB of reserved storage.
+Example: A 1,024 GB instance receives 3,072 IOPS for free.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/resource-limits
+
+Defaults to `null` (uses Azure's default based on storage and vCores).
+DESCRIPTION
+}
+
+variable "memory_size_in_gb" {
+  type        = number
+  default     = null
+  description = <<-DESCRIPTION
+(Optional) Memory size in GB for the SQL Managed Instance.
+
+Allows flexible memory allocation, particularly useful for Next-gen General Purpose (GPv2) instances.
+This is an improvement over standard General Purpose which has fixed memory allocation based on vCores.
+
+Flexible memory is currently available to locally redundant instances on premium-series hardware.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/resource-limits#flexible-memory
+
+Defaults to `null` (uses Azure's default based on vCores).
+DESCRIPTION
 }

@@ -189,7 +189,7 @@ resource "azurerm_role_assignment" "this" {
 # prevents system & user assigned identities being set at the same time.
 # https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
 resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
-  count = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0 || var.service_principal_enabled) ? 1 : 0
+  count = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0 || var.service_principal_enabled || var.is_general_purpose_v2 || var.storage_iops != null || var.memory_size_in_gb != null) ? 1 : 0
 
   method      = "PATCH"
   resource_id = azurerm_mssql_managed_instance.this.id
@@ -209,6 +209,15 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
         servicePrincipal = {
           type = "SystemAssigned"
         }
+      } : {},
+      var.is_general_purpose_v2 ? {
+        isGeneralPurposeV2 = true
+      } : {},
+      var.storage_iops != null ? {
+        storageIOps = var.storage_iops
+      } : {},
+      var.memory_size_in_gb != null ? {
+        memorySizeInGB = var.memory_size_in_gb
       } : {}
     )
   }
@@ -237,7 +246,7 @@ data "azapi_resource" "identity" {
   name                   = azurerm_mssql_managed_instance.this.name
   parent_id              = data.azurerm_resource_group.parent.id
   type                   = "Microsoft.Sql/managedInstances@2023-05-01-preview"
-  response_export_values = ["identity"]
+  response_export_values = ["identity", "properties"]
 }
 
 resource "azapi_resource_action" "sql_advanced_threat_protection" {
