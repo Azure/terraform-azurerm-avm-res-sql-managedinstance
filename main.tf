@@ -34,9 +34,11 @@ resource "azurerm_mssql_managed_instance" "this" {
   # identity is done via an azapi_resource_action further on, because of this bug that
   # prevents system & user assigned identities being set at the same time.
   # https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
+  # proxy_override is ignored because Azure's actual default ("Redirect") differs from the API default ("Default")
   lifecycle {
     ignore_changes = [
-      identity
+      identity,
+      proxy_override
     ]
   }
 }
