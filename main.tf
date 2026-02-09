@@ -207,7 +207,7 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
       length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? {
         primaryUserAssignedIdentityId = tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0]
       } : {},
-      var.service_principal_enabled ? {
+      (var.service_principal_enabled || local.current_service_principal_enabled) ? {
         servicePrincipal = {
           type = "SystemAssigned"
         }

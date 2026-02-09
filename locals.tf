@@ -1,4 +1,6 @@
 locals {
+  # Check if service principal exists in current state to preserve it during PATCH operations
+  current_service_principal_enabled = try(jsondecode(data.azapi_resource.identity.output).properties.servicePrincipal.type == "SystemAssigned", false)
   managed_identities = {
     system_assigned_user_assigned = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0) ? {
       this = {
