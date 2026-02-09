@@ -7,6 +7,8 @@ locals {
       }
     } : {}
   }
+  # Check if service principal exists in current state to preserve it during PATCH operations
+  current_service_principal_enabled = try(jsondecode(data.azapi_resource.identity.output).properties.servicePrincipal.type == "SystemAssigned", false)
   # Private endpoint application security group associations.
   # We merge the nested maps from private endpoints and application security group associations into a single map.
   private_endpoint_application_security_group_associations = { for assoc in flatten([
