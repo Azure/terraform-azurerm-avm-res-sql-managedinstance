@@ -196,33 +196,37 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   method      = "PATCH"
   resource_id = azurerm_mssql_managed_instance.this.id
   type        = "Microsoft.Sql/managedInstances@2023-05-01-preview"
-  body = {
-    identity = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0) ? {
-      type = local.managed_identities.system_assigned_user_assigned.this.type
-      userAssignedIdentities = (local.managed_identities.system_assigned_user_assigned.this.type == "UserAssigned") || (local.managed_identities.system_assigned_user_assigned.this.type == "SystemAssigned, UserAssigned") ? {
-        for id in tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) : id => {}
-      } : null
-    } : null,
-    properties = merge(
-      length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? {
-        primaryUserAssignedIdentityId = tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0]
-      } : {},
-      var.service_principal_enabled ? {
-        servicePrincipal = {
-          type = "SystemAssigned"
-        }
-      } : {},
-      var.is_general_purpose_v2 ? {
-        isGeneralPurposeV2 = true
-      } : {},
-      var.storage_iops != null ? {
-        storageIOps = var.storage_iops
-      } : {},
-      var.memory_size_in_gb != null ? {
-        memorySizeInGB = var.memory_size_in_gb
-      } : {}
-    )
-  }
+  body = jsondecode(jsonencode(merge(
+    (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0) ? {
+      identity = {
+        type = local.managed_identities.system_assigned_user_assigned.this.type
+        userAssignedIdentities = (local.managed_identities.system_assigned_user_assigned.this.type == "UserAssigned") || (local.managed_identities.system_assigned_user_assigned.this.type == "SystemAssigned, UserAssigned") ? {
+          for id in tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) : id => {}
+        } : null
+      }
+    } : {},
+    {
+      properties = merge(
+        length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? {
+          primaryUserAssignedIdentityId = tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0]
+        } : {},
+        var.service_principal_enabled ? {
+          servicePrincipal = {
+            type = "SystemAssigned"
+          }
+        } : {},
+        var.is_general_purpose_v2 ? {
+          isGeneralPurposeV2 = true
+        } : {},
+        var.storage_iops != null ? {
+          storageIOps = var.storage_iops
+        } : {},
+        var.memory_size_in_gb != null ? {
+          memorySizeInGB = var.memory_size_in_gb
+        } : {}
+      )
+    }
+  )))
   locks = [
     azurerm_mssql_managed_instance.this.id
   ]
