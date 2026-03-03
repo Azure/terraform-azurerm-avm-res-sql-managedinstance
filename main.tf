@@ -1,9 +1,8 @@
 resource "azapi_resource" "mssql_managed_instance" {
-  type      = "Microsoft.Sql/managedInstances@2023-05-01-preview"
+  location  = var.location
   name      = var.name
   parent_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}"
-  location  = var.location
-
+  type      = "Microsoft.Sql/managedInstances@2023-05-01-preview"
   body = {
     properties = {
       administratorLogin         = var.administrator_login
@@ -25,8 +24,11 @@ resource "azapi_resource" "mssql_managed_instance" {
     }
     tags = var.tags
   }
-
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = false
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   dynamic "timeouts" {
     for_each = var.timeouts == null ? [] : [var.timeouts]
@@ -57,10 +59,9 @@ resource "azapi_resource" "mssql_managed_instance" {
 resource "azapi_resource" "mssql_managed_instance_active_directory_administrator" {
   count = try(var.active_directory_administrator.object_id, null) == null ? 0 : 1
 
-  type      = "Microsoft.Sql/managedInstances/administrators@2023-05-01-preview"
   name      = "ActiveDirectory"
   parent_id = azapi_resource.mssql_managed_instance.id
-
+  type      = "Microsoft.Sql/managedInstances/administrators@2023-05-01-preview"
   body = {
     properties = {
       administratorType         = "ActiveDirectory"
@@ -70,8 +71,11 @@ resource "azapi_resource" "mssql_managed_instance_active_directory_administrator
       azureADOnlyAuthentication = var.active_directory_administrator.azuread_authentication_only
     }
   }
-
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = false
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   dynamic "timeouts" {
     for_each = var.active_directory_administrator.timeouts == null ? [] : [var.active_directory_administrator.timeouts]
@@ -132,12 +136,16 @@ resource "azapi_resource" "mssql_managed_instance_server_key" {
       uri           = var.transparent_data_encryption.key_vault_key_id
     }
   }
+  create_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  update_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   # Before deleting the server key, revert the encryption protector to ServiceManaged.
   # Azure prevents deletion of a key that is currently set as the encryption protector.
   provisioner "local-exec" {
-    when    = destroy
     command = "az rest --method PUT --uri '${self.parent_id}/encryptionProtector/current?api-version=2023-05-01-preview' --body '{\"properties\":{\"serverKeyType\":\"ServiceManaged\",\"serverKeyName\":\"ServiceManaged\"}}' --output none"
+    when    = destroy
   }
 
   depends_on = [
@@ -212,45 +220,48 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
 resource "azapi_resource" "role_assignment_vulnerability_assessment_storage" {
   count = var.vulnerability_assessment == null ? 0 : 1
 
-  type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
   name      = uuid()
   parent_id = var.storage_account_resource_id
-
+  type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
   body = {
     properties = {
       principalId      = jsondecode(data.azapi_resource.identity.output).identity.principalId
       roleDefinitionId = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe"
     }
   }
-
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = false
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 }
 
 # required AVM resources interfaces
 resource "azapi_resource" "management_lock" {
   count = var.lock != null ? 1 : 0
 
-  type      = "Microsoft.Authorization/locks@2017-04-01"
   name      = coalesce(var.lock.name, "lock-${var.lock.kind}")
   parent_id = azapi_resource.mssql_managed_instance.id
-
+  type      = "Microsoft.Authorization/locks@2017-04-01"
   body = {
     properties = {
       level = var.lock.kind
       notes = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
     }
   }
-
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = false
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 }
 
 resource "azapi_resource" "role_assignment" {
   for_each = var.role_assignments
 
-  type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
   name      = uuid()
   parent_id = azapi_resource.mssql_managed_instance.id
-
+  type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
   body = {
     properties = {
       principalId                        = each.value.principal_id
@@ -261,8 +272,11 @@ resource "azapi_resource" "role_assignment" {
       principalType                      = "ServicePrincipal"
     }
   }
-
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = false
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   depends_on = [
     data.azurerm_role_definition.this,

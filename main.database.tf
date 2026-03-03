@@ -1,10 +1,9 @@
 resource "azapi_resource" "mssql_managed_database" {
   for_each = var.databases
 
-  type      = "Microsoft.Sql/managedInstances/databases@2023-05-01-preview"
   name      = each.value.name
   parent_id = azapi_resource.mssql_managed_instance.id
-
+  type      = "Microsoft.Sql/managedInstances/databases@2023-05-01-preview"
   body = {
     properties = merge(
       {
@@ -27,8 +26,11 @@ resource "azapi_resource" "mssql_managed_database" {
     )
     tags = each.value.tags
   }
-
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = false
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   dynamic "timeouts" {
     for_each = each.value.timeouts == null ? [] : [each.value.timeouts]

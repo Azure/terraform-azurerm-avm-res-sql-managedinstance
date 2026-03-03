@@ -57,43 +57,36 @@ resource "azurerm_resource_group" "this" {
 
 # Key Vault for TDE key storage
 resource "azurerm_key_vault" "tde" {
-  location            = azurerm_resource_group.this.location
-  name                = "${replace(module.naming.key_vault.name_unique, "-", "")}tde"
-  resource_group_name = azurerm_resource_group.this.name
-  sku_name            = "standard"
-  tenant_id           = data.azurerm_client_config.current.tenant_id
-
+  location                   = azurerm_resource_group.this.location
+  name                       = "${replace(module.naming.key_vault.name_unique, "-", "")}tde"
+  resource_group_name        = azurerm_resource_group.this.name
+  sku_name                   = "standard"
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
   purge_protection_enabled   = true
   soft_delete_retention_days = 7
 
   access_policy {
-    object_id               = data.azurerm_client_config.current.object_id
-    key_permissions         = ["Get", "List", "Create", "Delete", "Update", "Recover", "GetRotationPolicy"]
-    secret_permissions      = ["Get", "List", "Set", "Delete"]
     certificate_permissions = ["Get", "List", "Create", "Delete", "Update"]
+    key_permissions         = ["Get", "List", "Create", "Delete", "Update", "Recover", "GetRotationPolicy"]
+    object_id               = data.azurerm_client_config.current.object_id
+    secret_permissions      = ["Get", "List", "Set", "Delete"]
     tenant_id               = data.azurerm_client_config.current.tenant_id
   }
-
   network_acls {
-    default_action             = "Allow"
     bypass                     = "AzureServices"
+    default_action             = "Allow"
     virtual_network_subnet_ids = [azurerm_subnet.this.id]
   }
+
+  depends_on = [azurerm_subnet.this]
 
   lifecycle {
     ignore_changes = [access_policy]
   }
-
-  depends_on = [azurerm_subnet.this]
 }
 
 # Key Vault key for TDE
 resource "azurerm_key_vault_key" "tde" {
-  key_vault_id = azurerm_key_vault.tde.id
-  name         = "sqlmi-tde-key"
-  key_type     = "RSA"
-  key_size     = 2048
-
   key_opts = [
     "decrypt",
     "encrypt",
@@ -102,6 +95,10 @@ resource "azurerm_key_vault_key" "tde" {
     "verify",
     "wrapKey",
   ]
+  key_type     = "RSA"
+  key_vault_id = azurerm_key_vault.tde.id
+  name         = "sqlmi-tde-key"
+  key_size     = 2048
 }
 
 # Network security group
@@ -253,19 +250,19 @@ resource "azurerm_network_security_rule" "deny_all_outbound" {
 
 # Virtual network and subnet
 resource "azurerm_virtual_network" "this" {
-  address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.this.location
   name                = "vnet-mi"
   resource_group_name = azurerm_resource_group.this.name
+  address_space       = ["10.0.0.0/16"]
 }
 
 resource "azurerm_subnet" "this" {
-  address_prefixes                               = ["10.0.0.0/24"]
-  name                                           = "subnet-mi"
-  resource_group_name                            = azurerm_resource_group.this.name
-  virtual_network_name                           = azurerm_virtual_network.this.name
-  service_endpoints                = ["Microsoft.KeyVault", "Microsoft.Storage", "Microsoft.Sql"]
+  address_prefixes                  = ["10.0.0.0/24"]
+  name                              = "subnet-mi"
+  resource_group_name               = azurerm_resource_group.this.name
+  virtual_network_name              = azurerm_virtual_network.this.name
   private_endpoint_network_policies = "Disabled"
+  service_endpoints                 = ["Microsoft.KeyVault", "Microsoft.Storage", "Microsoft.Sql"]
 
   delegation {
     name = "managedInstances"
@@ -317,9 +314,9 @@ resource "azurerm_user_assigned_identity" "sqlmi" {
 resource "azurerm_key_vault_access_policy" "sqlmi" {
   key_vault_id       = azurerm_key_vault.tde.id
   object_id          = azurerm_user_assigned_identity.sqlmi.principal_id
+  tenant_id          = data.azurerm_client_config.current.tenant_id
   key_permissions    = ["Get", "WrapKey", "UnwrapKey"]
   secret_permissions = ["Get", "Set", "List"]
-  tenant_id          = data.azurerm_client_config.current.tenant_id
 }
 
 # This is the module call with TDE enabled
@@ -336,18 +333,15 @@ module "sqlmi_tde" {
   storage_size_in_gb           = 32
   subnet_id                    = azurerm_subnet.this.id
   vcores                       = "4"
-
+  managed_identities = {
+    system_assigned            = true
+    user_assigned_resource_ids = [azurerm_user_assigned_identity.sqlmi.id]
+  }
   # TDE configuration with Key Vault key
   transparent_data_encryption = {
     key_vault_key_id      = azurerm_key_vault_key.tde.id
     auto_rotation_enabled = true
   }
-
-  managed_identities = {
-    system_assigned            = true
-    user_assigned_resource_ids = [azurerm_user_assigned_identity.sqlmi.id]
-  }
-
   zone_redundant_enabled = false
 
   depends_on = [

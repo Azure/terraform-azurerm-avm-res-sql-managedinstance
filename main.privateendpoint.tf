@@ -1,11 +1,10 @@
 resource "azapi_resource" "private_endpoint_managed_dns_zone_groups" {
   for_each = var.private_endpoints
 
-  type      = "Microsoft.Network/privateEndpoints@2023-04-01"
+  location  = each.value.location != null ? each.value.location : var.location
   name      = each.value.name != null ? each.value.name : "pe-${var.name}"
   parent_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${each.value.resource_group_name != null ? each.value.resource_group_name : var.resource_group_name}"
-  location  = each.value.location != null ? each.value.location : var.location
-
+  type      = "Microsoft.Network/privateEndpoints@2023-04-01"
   body = {
     properties = {
       subnet = {
@@ -47,8 +46,11 @@ resource "azapi_resource" "private_endpoint_managed_dns_zone_groups" {
     }
     tags = each.value.tags
   }
-
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = false
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   depends_on = [
     azapi_resource.mssql_managed_instance,
@@ -61,11 +63,10 @@ resource "azapi_resource" "private_endpoint_managed_dns_zone_groups" {
 resource "azapi_resource" "private_endpoint_unmanaged_dns_zone_groups" {
   for_each = { for k, v in var.private_endpoints : k => v if !var.private_endpoints_manage_dns_zone_group }
 
-  type      = "Microsoft.Network/privateEndpoints@2023-04-01"
+  location  = each.value.location != null ? each.value.location : var.location
   name      = each.value.name != null ? each.value.name : "pe-${var.name}"
   parent_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${each.value.resource_group_name != null ? each.value.resource_group_name : var.resource_group_name}"
-  location  = each.value.location != null ? each.value.location : var.location
-
+  type      = "Microsoft.Network/privateEndpoints@2023-04-01"
   body = {
     properties = {
       subnet = {
@@ -99,25 +100,27 @@ resource "azapi_resource" "private_endpoint_unmanaged_dns_zone_groups" {
     }
     tags = each.value.tags
   }
-
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = false
-
-  lifecycle {
-    ignore_changes = [body.properties.privateDnsZoneConfigs]
-  }
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   depends_on = [
     azapi_resource.mssql_managed_instance,
   ]
+
+  lifecycle {
+    ignore_changes = [body.properties.privateDnsZoneConfigs]
+  }
 }
 
 resource "azapi_resource" "private_endpoint_application_security_group_association" {
   for_each = local.private_endpoint_application_security_group_associations
 
-  type      = "Microsoft.Network/privateEndpoints/privateLinkServiceConnections/groupMembers@2023-04-01"
   name      = "asg-${each.value.asg_name}"
   parent_id = "${var.private_endpoints_manage_dns_zone_group ? azapi_resource.private_endpoint_managed_dns_zone_groups[each.value.pe_key].id : azapi_resource.private_endpoint_unmanaged_dns_zone_groups[each.value.pe_key].id}/privateLinkServiceConnections/${each.value.pe_key}"
-
+  type      = "Microsoft.Network/privateEndpoints/privateLinkServiceConnections/groupMembers@2023-04-01"
   body = {
     properties = {
       applicationSecurityGroup = {
@@ -125,6 +128,9 @@ resource "azapi_resource" "private_endpoint_application_security_group_associati
       }
     }
   }
-
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = false
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 }

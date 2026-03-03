@@ -1,10 +1,9 @@
 resource "azapi_resource" "mssql_managed_instance_failover_group" {
   for_each = var.failover_group
 
-  type      = "Microsoft.Sql/locations/instanceFailoverGroups@2023-05-01-preview"
   name      = each.value.name
   parent_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Sql/locations/${each.value.location}"
-
+  type      = "Microsoft.Sql/locations/instanceFailoverGroups@2023-05-01-preview"
   body = {
     properties = {
       managedInstancePairs = [
@@ -26,8 +25,11 @@ resource "azapi_resource" "mssql_managed_instance_failover_group" {
       }
     }
   }
-
+  create_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers              = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   schema_validation_enabled = false
+  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   dynamic "timeouts" {
     for_each = each.value.timeouts == null ? [] : [each.value.timeouts]

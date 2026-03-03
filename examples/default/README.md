@@ -51,8 +51,11 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = "westus2"
+  location = "malaysiawest"
   name     = module.naming.resource_group.name_unique
+  tags = {
+    SecurityControl = "Ignore"
+  }
 }
 
 resource "azurerm_network_security_group" "this" {
