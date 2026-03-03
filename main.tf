@@ -1,24 +1,32 @@
-resource "azurerm_mssql_managed_instance" "this" {
-  license_type                   = var.license_type
-  location                       = var.location
-  name                           = var.name
-  resource_group_name            = var.resource_group_name
-  sku_name                       = var.sku_name
-  storage_size_in_gb             = var.storage_size_in_gb
-  subnet_id                      = var.subnet_id
-  vcores                         = var.vcores
-  administrator_login            = var.administrator_login
-  administrator_login_password   = var.administrator_login_password
-  collation                      = var.collation
-  dns_zone_partner_id            = var.dns_zone_partner_id
-  maintenance_configuration_name = var.maintenance_configuration_name
-  minimum_tls_version            = var.minimum_tls_version
-  proxy_override                 = var.proxy_override
-  public_data_endpoint_enabled   = var.public_data_endpoint_enabled
-  storage_account_type           = var.storage_account_type
-  tags                           = var.tags
-  timezone_id                    = var.timezone_id
-  zone_redundant_enabled         = var.zone_redundant_enabled
+resource "azapi_resource" "mssql_managed_instance" {
+  type      = "Microsoft.Sql/managedInstances@2023-05-01-preview"
+  name      = var.name
+  parent_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}"
+  location  = var.location
+
+  body = {
+    properties = {
+      administratorLogin         = var.administrator_login
+      administratorLoginPassword = var.administrator_login_password
+      collation                  = var.collation
+      dnsZonePartnerId           = var.dns_zone_partner_id
+      licenseType                = var.license_type
+      maintenanceConfigurationId = var.maintenance_configuration_name != null ? "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Maintenance/publicMaintenanceConfigurations/${var.maintenance_configuration_name}" : null
+      minimumTlsVersion          = var.minimum_tls_version
+      proxyOverride              = var.proxy_override
+      publicDataEndpointEnabled  = var.public_data_endpoint_enabled
+      skuName                    = var.sku_name
+      storageSizeInGB            = var.storage_size_in_gb
+      storageAccountType         = var.storage_account_type
+      subnetId                   = var.subnet_id
+      timezoneId                 = var.timezone_id
+      vCores                     = var.vcores
+      zoneRedundant              = var.zone_redundant_enabled
+    }
+    tags = var.tags
+  }
+
+  schema_validation_enabled = false
 
   dynamic "timeouts" {
     for_each = var.timeouts == null ? [] : [var.timeouts]
@@ -31,26 +39,39 @@ resource "azurerm_mssql_managed_instance" "this" {
     }
   }
 
-  # identity is done via an azapi_resource_action further on, because of this bug that
-  # prevents system & user assigned identities being set at the same time.
-  # https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
-  # proxy_override is ignored because Azure's actual default ("Redirect") differs from the API default ("Default")
+  # identity is handled via azapi_resource_action (sql_managed_instance_patch_identities)
+  # due to provider limitations with system & user assigned identities.
+  # See: https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
   lifecycle {
     ignore_changes = [
-      identity,
-      proxy_override
+      body.properties.proxyOverride,
+      # Azure automatically sets these after creation with default values
+      body.properties.collation,
+      body.properties.timezoneId,
+      body.properties.publicDataEndpointEnabled,
+      body.properties.maintenanceConfigurationId,
     ]
   }
 }
 
-resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" {
+resource "azapi_resource" "mssql_managed_instance_active_directory_administrator" {
   count = try(var.active_directory_administrator.object_id, null) == null ? 0 : 1
 
-  login_username              = var.active_directory_administrator.login_username
-  managed_instance_id         = azurerm_mssql_managed_instance.this.id
-  object_id                   = var.active_directory_administrator.object_id
-  tenant_id                   = var.active_directory_administrator.tenant_id
-  azuread_authentication_only = var.active_directory_administrator.azuread_authentication_only
+  type      = "Microsoft.Sql/managedInstances/administrators@2023-05-01-preview"
+  name      = "ActiveDirectory"
+  parent_id = azapi_resource.mssql_managed_instance.id
+
+  body = {
+    properties = {
+      administratorType         = "ActiveDirectory"
+      login                     = var.active_directory_administrator.login_username
+      objectId                  = var.active_directory_administrator.object_id
+      tenantId                  = var.active_directory_administrator.tenant_id
+      azureADOnlyAuthentication = var.active_directory_administrator.azuread_authentication_only
+    }
+  }
+
+  schema_validation_enabled = false
 
   dynamic "timeouts" {
     for_each = var.active_directory_administrator.timeouts == null ? [] : [var.active_directory_administrator.timeouts]
@@ -64,12 +85,11 @@ resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" 
   }
 }
 
-# https://learn.microsoft.com/en-us/rest/api/sql/managed-server-security-alert-policies/create-or-update?view=rest-sql-2023-08-01-preview&tabs=HTTP
 resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" {
   count = var.security_alert_policy == {} ? 0 : 1
 
   method      = "PUT"
-  resource_id = "${azurerm_mssql_managed_instance.this.id}/securityAlertPolicies/Default"
+  resource_id = "${azapi_resource.mssql_managed_instance.id}/securityAlertPolicies/Default"
   type        = "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-08-01-preview"
   body = {
     properties = {
@@ -83,7 +103,7 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
     }
   }
   locks = [
-    azurerm_mssql_managed_instance.this.id
+    azapi_resource.mssql_managed_instance.id
   ]
   retry = var.retry.mssql_managed_instance_security_alert_policy
 
@@ -95,16 +115,49 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
   }
 
   depends_on = [
-    azurerm_mssql_managed_instance_active_directory_administrator.this,
+    azapi_resource.mssql_managed_instance_active_directory_administrator,
   ]
 }
 
-resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
-  count = var.transparent_data_encryption == {} ? 0 : 1
+# Register the Key Vault key as a server key on the Managed Instance before setting it as the encryption protector
+resource "azapi_resource" "mssql_managed_instance_server_key" {
+  count = var.transparent_data_encryption != null ? 1 : 0
 
-  managed_instance_id   = azurerm_mssql_managed_instance.this.id
-  auto_rotation_enabled = var.transparent_data_encryption.auto_rotation_enabled
-  key_vault_key_id      = var.transparent_data_encryption.key_vault_key_id
+  name      = "${split(".", split("/", var.transparent_data_encryption.key_vault_key_id)[2])[0]}_${split("/", var.transparent_data_encryption.key_vault_key_id)[4]}_${split("/", var.transparent_data_encryption.key_vault_key_id)[5]}"
+  parent_id = azapi_resource.mssql_managed_instance.id
+  type      = "Microsoft.Sql/managedInstances/keys@2023-05-01-preview"
+  body = {
+    properties = {
+      serverKeyType = "AzureKeyVault"
+      uri           = var.transparent_data_encryption.key_vault_key_id
+    }
+  }
+
+  # Before deleting the server key, revert the encryption protector to ServiceManaged.
+  # Azure prevents deletion of a key that is currently set as the encryption protector.
+  provisioner "local-exec" {
+    when    = destroy
+    command = "az rest --method PUT --uri '${self.parent_id}/encryptionProtector/current?api-version=2023-05-01-preview' --body '{\"properties\":{\"serverKeyType\":\"ServiceManaged\",\"serverKeyName\":\"ServiceManaged\"}}' --output none"
+  }
+
+  depends_on = [
+    azapi_resource_action.sql_managed_instance_patch_identities,
+  ]
+}
+
+resource "azapi_resource_action" "mssql_managed_instance_transparent_data_encryption" {
+  count = var.transparent_data_encryption != null ? 1 : 0
+
+  method      = "PUT"
+  resource_id = "${azapi_resource.mssql_managed_instance.id}/encryptionProtector/current"
+  type        = "Microsoft.Sql/managedInstances/encryptionProtector@2023-05-01-preview"
+  body = {
+    properties = {
+      autoRotationEnabled = var.transparent_data_encryption.auto_rotation_enabled
+      serverKeyName       = "${split(".", split("/", var.transparent_data_encryption.key_vault_key_id)[2])[0]}_${split("/", var.transparent_data_encryption.key_vault_key_id)[4]}_${split("/", var.transparent_data_encryption.key_vault_key_id)[5]}"
+      serverKeyType       = "AzureKeyVault"
+    }
+  }
 
   dynamic "timeouts" {
     for_each = var.transparent_data_encryption.timeouts == null ? [] : [var.transparent_data_encryption.timeouts]
@@ -118,7 +171,7 @@ resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
   }
 
   depends_on = [
-    azapi_resource_action.mssql_managed_instance_security_alert_policy,
+    azapi_resource.mssql_managed_instance_server_key,
   ]
 }
 
@@ -131,7 +184,7 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
   count = var.vulnerability_assessment == null ? 0 : 1
 
   method      = "PUT"
-  resource_id = "${azurerm_mssql_managed_instance.this.id}/vulnerabilityAssessments/default"
+  resource_id = "${azapi_resource.mssql_managed_instance.id}/vulnerabilityAssessments/default"
   type        = "Microsoft.Sql/managedInstances/vulnerabilityAssessments@2023-08-01-preview"
   body = {
     properties = {
@@ -146,55 +199,84 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
     }
   }
   locks = [
-    azurerm_mssql_managed_instance.this.id
+    azapi_resource.mssql_managed_instance.id
   ]
 
   depends_on = [
-    azurerm_mssql_managed_instance_transparent_data_encryption.this,
+    azapi_resource_action.mssql_managed_instance_transparent_data_encryption,
   ]
 }
 
 # this is required for vulnerability assessments to function - user assigned identities are not supported
 # https://learn.microsoft.com/en-us/azure/azure-sql/database/sql-database-vulnerability-assessment-storage?view=azuresql
-resource "azurerm_role_assignment" "sqlmi_system_assigned" {
+resource "azapi_resource" "role_assignment_vulnerability_assessment_storage" {
   count = var.vulnerability_assessment == null ? 0 : 1
 
-  principal_id         = jsondecode(data.azapi_resource.identity.output).identity.principal_id
-  scope                = var.storage_account_resource_id
-  role_definition_name = "Storage Blob Data Contributor"
+  type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
+  name      = uuid()
+  parent_id = var.storage_account_resource_id
+
+  body = {
+    properties = {
+      principalId      = jsondecode(data.azapi_resource.identity.output).identity.principalId
+      roleDefinitionId = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe"
+    }
+  }
+
+  schema_validation_enabled = false
 }
 
 # required AVM resources interfaces
-resource "azurerm_management_lock" "this" {
+resource "azapi_resource" "management_lock" {
   count = var.lock != null ? 1 : 0
 
-  lock_level = var.lock.kind
-  name       = coalesce(var.lock.name, "lock-${var.lock.kind}")
-  scope      = azurerm_mssql_managed_instance.this.id
-  notes      = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
+  type      = "Microsoft.Authorization/locks@2017-04-01"
+  name      = coalesce(var.lock.name, "lock-${var.lock.kind}")
+  parent_id = azapi_resource.mssql_managed_instance.id
+
+  body = {
+    properties = {
+      level = var.lock.kind
+      notes = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
+    }
+  }
+
+  schema_validation_enabled = false
 }
 
-resource "azurerm_role_assignment" "this" {
+resource "azapi_resource" "role_assignment" {
   for_each = var.role_assignments
 
-  principal_id                           = each.value.principal_id
-  scope                                  = azurerm_mssql_managed_instance.this.id
-  condition                              = each.value.condition
-  condition_version                      = each.value.condition_version
-  delegated_managed_identity_resource_id = each.value.delegated_managed_identity_resource_id
-  role_definition_id                     = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? each.value.role_definition_id_or_name : null
-  role_definition_name                   = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? null : each.value.role_definition_id_or_name
-  skip_service_principal_aad_check       = each.value.skip_service_principal_aad_check
+  type      = "Microsoft.Authorization/roleAssignments@2022-04-01"
+  name      = uuid()
+  parent_id = azapi_resource.mssql_managed_instance.id
+
+  body = {
+    properties = {
+      principalId                        = each.value.principal_id
+      roleDefinitionId                   = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? each.value.role_definition_id_or_name : "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/${data.azurerm_role_definition.this[each.value.role_definition_id_or_name].id}"
+      condition                          = each.value.condition
+      conditionVersion                   = each.value.condition_version
+      delegatedManagedIdentityResourceId = each.value.delegated_managed_identity_resource_id
+      principalType                      = "ServicePrincipal"
+    }
+  }
+
+  schema_validation_enabled = false
+
+  depends_on = [
+    data.azurerm_role_definition.this,
+  ]
 }
 
-# identity is done via an azapi_resource_action further on, because of this bug that
+# identity is done via an azapi_resource_action, because of this bug that
 # prevents system & user assigned identities being set at the same time.
 # https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
 resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   count = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0 || var.service_principal_enabled || var.is_general_purpose_v2 || var.storage_iops != null || var.memory_size_in_gb != null) ? 1 : 0
 
   method      = "PATCH"
-  resource_id = azurerm_mssql_managed_instance.this.id
+  resource_id = azapi_resource.mssql_managed_instance.id
   type        = "Microsoft.Sql/managedInstances@2023-05-01-preview"
   body = {
     identity = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0) ? {
@@ -224,7 +306,7 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
     )
   }
   locks = [
-    azurerm_mssql_managed_instance.this.id
+    azapi_resource.mssql_managed_instance.id
   ]
   retry = var.retry.sql_managed_instance_patch_identities
 
@@ -236,24 +318,36 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   }
 
   depends_on = [
-    azapi_resource_action.mssql_managed_instance_vulnerability_assessment,
+    azapi_resource_action.mssql_managed_instance_security_alert_policy,
   ]
 }
 
+data "azurerm_client_config" "current" {}
+
 data "azurerm_resource_group" "parent" {
-  name = azurerm_mssql_managed_instance.this.resource_group_name
+  name = var.resource_group_name
 }
 
 data "azapi_resource" "identity" {
-  name                   = azurerm_mssql_managed_instance.this.name
+  name                   = azapi_resource.mssql_managed_instance.name
   parent_id              = data.azurerm_resource_group.parent.id
   type                   = "Microsoft.Sql/managedInstances@2023-05-01-preview"
   response_export_values = ["identity", "properties"]
 }
 
+data "azurerm_role_definition" "this" {
+  for_each = {
+    for k, v in var.role_assignments :
+    v.role_definition_id_or_name => v
+    if !strcontains(lower(v.role_definition_id_or_name), lower(local.role_definition_resource_substring))
+  }
+
+  name = each.key
+}
+
 resource "azapi_resource_action" "sql_advanced_threat_protection" {
   method      = "PUT"
-  resource_id = "${azurerm_mssql_managed_instance.this.id}/advancedThreatProtectionSettings/Default"
+  resource_id = "${azapi_resource.mssql_managed_instance.id}/advancedThreatProtectionSettings/Default"
   type        = "Microsoft.Sql/managedInstances/advancedThreatProtectionSettings@2023-08-01-preview"
   body = {
     properties = {
@@ -261,7 +355,7 @@ resource "azapi_resource_action" "sql_advanced_threat_protection" {
     }
   }
   locks = [
-    azurerm_mssql_managed_instance.this.id
+    azapi_resource.mssql_managed_instance.id
   ]
   retry = var.retry.sql_advanced_threat_protection
 
@@ -277,37 +371,38 @@ resource "azapi_resource_action" "sql_advanced_threat_protection" {
   ]
 }
 
-resource "azurerm_monitor_diagnostic_setting" "this" {
+resource "azapi_resource_action" "diagnostic_setting" {
   for_each = var.diagnostic_settings
 
-  name                           = each.value.name != null ? each.value.name : "diag-${var.name}"
-  target_resource_id             = azurerm_mssql_managed_instance.this.id
-  eventhub_authorization_rule_id = each.value.event_hub_authorization_rule_resource_id
-  eventhub_name                  = each.value.event_hub_name
-  log_analytics_destination_type = each.value.log_analytics_destination_type
-  log_analytics_workspace_id     = each.value.workspace_resource_id
-  partner_solution_id            = each.value.marketplace_partner_resource_id
-  storage_account_id             = each.value.storage_account_resource_id
-
-  dynamic "enabled_log" {
-    for_each = each.value.log_categories
-
-    content {
-      category = enabled_log.value
+  method      = "PUT"
+  resource_id = "${azapi_resource.mssql_managed_instance.id}/providers/Microsoft.Insights/diagnosticSettings/${coalesce(each.value.name, "diag-${var.name}")}"
+  type        = "Microsoft.Insights/diagnosticSettings@2017-05-01-preview"
+  body = {
+    properties = {
+      eventHubAuthorizationRuleId = each.value.event_hub_authorization_rule_resource_id
+      eventHubName                = each.value.event_hub_name
+      logAnalyticsDestinationType = each.value.log_analytics_destination_type
+      logs = concat(
+        [for log in each.value.log_categories : {
+          category = log
+          enabled  = true
+        }],
+        [for log in each.value.log_groups : {
+          categoryGroup = log
+          enabled       = true
+        }]
+      )
+      marketplacePartnerId = each.value.marketplace_partner_resource_id
+      metrics = [for metric in each.value.metric_categories : {
+        category = metric
+        enabled  = true
+      }]
+      storageAccountId = each.value.storage_account_resource_id
+      workspaceId      = each.value.workspace_resource_id
     }
   }
-  dynamic "enabled_log" {
-    for_each = each.value.log_groups
 
-    content {
-      category_group = enabled_log.value
-    }
-  }
-  dynamic "metric" {
-    for_each = each.value.metric_categories
-
-    content {
-      category = metric.value
-    }
-  }
+  depends_on = [
+    azapi_resource_action.sql_advanced_threat_protection,
+  ]
 }

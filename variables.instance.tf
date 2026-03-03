@@ -276,7 +276,7 @@ variable "transparent_data_encryption" {
       update = optional(string)
     }))
   })
-  default     = {}
+  default     = null
   description = <<-DESCRIPTION
  - `auto_rotation_enabled` - (Optional) When enabled, the SQL Managed Instance will continuously check the key vault for any new versions of the key being used as the TDE protector. If a new version of the key is detected, the TDE protector on the SQL Managed Instance will be automatically rotated to the latest key version within 60 minutes.
  - `key_vault_key_id` - (Optional) To use customer managed keys from Azure Key Vault, provide the AKV Key ID. To use service managed keys, omit this field.

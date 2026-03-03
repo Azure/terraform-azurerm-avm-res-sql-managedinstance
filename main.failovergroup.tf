@@ -1,20 +1,34 @@
-resource "azurerm_mssql_managed_instance_failover_group" "this" {
+resource "azapi_resource" "mssql_managed_instance_failover_group" {
   for_each = var.failover_group
 
-  location                                  = each.value.location
-  managed_instance_id                       = azurerm_mssql_managed_instance.this.id
-  name                                      = each.value.name
-  partner_managed_instance_id               = each.value.partner_managed_instance_id
-  readonly_endpoint_failover_policy_enabled = each.value.readonly_endpoint_failover_policy_enabled
+  type      = "Microsoft.Sql/locations/instanceFailoverGroups@2023-05-01-preview"
+  name      = each.value.name
+  parent_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Sql/locations/${each.value.location}"
 
-  dynamic "read_write_endpoint_failover_policy" {
-    for_each = [each.value.read_write_endpoint_failover_policy]
-
-    content {
-      mode          = read_write_endpoint_failover_policy.value.mode
-      grace_minutes = read_write_endpoint_failover_policy.value.grace_minutes
+  body = {
+    properties = {
+      managedInstancePairs = [
+        {
+          partnerServer = {
+            id = each.value.partner_managed_instance_id
+          }
+          primaryServer = {
+            id = azapi_resource.mssql_managed_instance.id
+          }
+        }
+      ]
+      readOnlyEndpoint = {
+        failoverPolicy = each.value.readonly_endpoint_failover_policy_enabled ? "Automatic" : "Manual"
+      }
+      readWriteEndpoint = {
+        failoverPolicy                         = each.value.read_write_endpoint_failover_policy.mode
+        failoverWithDataLossGracePeriodMinutes = each.value.read_write_endpoint_failover_policy.grace_minutes
+      }
     }
   }
+
+  schema_validation_enabled = false
+
   dynamic "timeouts" {
     for_each = each.value.timeouts == null ? [] : [each.value.timeouts]
 
@@ -25,5 +39,9 @@ resource "azurerm_mssql_managed_instance_failover_group" "this" {
       update = timeouts.value.update
     }
   }
+
+  depends_on = [
+    azapi_resource.mssql_managed_database,
+  ]
 }
 

@@ -1,77 +1,130 @@
-resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
+resource "azapi_resource" "private_endpoint_managed_dns_zone_groups" {
   for_each = var.private_endpoints
 
-  location                      = each.value.location != null ? each.value.location : var.location
-  name                          = each.value.name != null ? each.value.name : "pe-${var.name}"
-  resource_group_name           = each.value.resource_group_name != null ? each.value.resource_group_name : var.resource_group_name
-  subnet_id                     = each.value.subnet_resource_id
-  custom_network_interface_name = each.value.network_interface_name
-  tags                          = each.value.tags
+  type      = "Microsoft.Network/privateEndpoints@2023-04-01"
+  name      = each.value.name != null ? each.value.name : "pe-${var.name}"
+  parent_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${each.value.resource_group_name != null ? each.value.resource_group_name : var.resource_group_name}"
+  location  = each.value.location != null ? each.value.location : var.location
 
-  private_service_connection {
-    is_manual_connection           = false
-    name                           = each.value.private_service_connection_name != null ? each.value.private_service_connection_name : "pse-${var.name}"
-    private_connection_resource_id = azurerm_mssql_managed_instance.this.id
-    subresource_names              = ["managedInstance"]
-  }
-  dynamic "ip_configuration" {
-    for_each = each.value.ip_configurations
-
-    content {
-      name               = ip_configuration.value.name
-      private_ip_address = ip_configuration.value.private_ip_address
-      member_name        = "managedInstance"
-      subresource_name   = "managedInstance"
+  body = {
+    properties = {
+      subnet = {
+        id = each.value.subnet_resource_id
+      }
+      privateLinkServiceConnections = [
+        {
+          name = each.value.private_service_connection_name != null ? each.value.private_service_connection_name : "pse-${var.name}"
+          properties = {
+            privateLinkServiceId = azapi_resource.mssql_managed_instance.id
+            groupIds             = ["managedInstance"]
+            requestMessage       = null
+            privateLinkServiceConnectionState = {
+              status      = "Approved"
+              description = "Auto-approved by Terraform"
+            }
+          }
+        }
+      ]
+      ipConfigurations = [
+        for ip_config in each.value.ip_configurations : {
+          name = ip_config.name
+          properties = {
+            privateIPAddress = ip_config.private_ip_address
+            groupId          = "managedInstance"
+            memberName       = "managedInstance"
+          }
+        }
+      ]
+      privateDnsZoneConfigs = length(each.value.private_dns_zone_resource_ids) > 0 ? [
+        for zone_id in each.value.private_dns_zone_resource_ids : {
+          name = "config-${basename(zone_id)}"
+          properties = {
+            privateDnsZoneId = zone_id
+          }
+        }
+      ] : null
+      customNetworkInterfaceName = each.value.network_interface_name
     }
+    tags = each.value.tags
   }
-  dynamic "private_dns_zone_group" {
-    for_each = length(each.value.private_dns_zone_resource_ids) > 0 ? ["this"] : []
 
-    content {
-      name                 = each.value.private_dns_zone_group_name
-      private_dns_zone_ids = each.value.private_dns_zone_resource_ids
-    }
-  }
+  schema_validation_enabled = false
+
+  depends_on = [
+    azapi_resource.mssql_managed_instance,
+  ]
 }
 
 # The PE resource when we are managing **not** the private_dns_zone_group block
 # An example use case is customers using Azure Policy to create private DNS zones
 # e.g. <https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/private-link-and-dns-integration-at-scale>
-resource "azurerm_private_endpoint" "this_unmanaged_dns_zone_groups" {
+resource "azapi_resource" "private_endpoint_unmanaged_dns_zone_groups" {
   for_each = { for k, v in var.private_endpoints : k => v if !var.private_endpoints_manage_dns_zone_group }
 
-  location                      = each.value.location != null ? each.value.location : var.location
-  name                          = each.value.name != null ? each.value.name : "pe-${var.name}"
-  resource_group_name           = each.value.resource_group_name != null ? each.value.resource_group_name : var.resource_group_name
-  subnet_id                     = each.value.subnet_resource_id
-  custom_network_interface_name = each.value.network_interface_name
-  tags                          = each.value.tags
+  type      = "Microsoft.Network/privateEndpoints@2023-04-01"
+  name      = each.value.name != null ? each.value.name : "pe-${var.name}"
+  parent_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${each.value.resource_group_name != null ? each.value.resource_group_name : var.resource_group_name}"
+  location  = each.value.location != null ? each.value.location : var.location
 
-  private_service_connection {
-    is_manual_connection           = false
-    name                           = each.value.private_service_connection_name != null ? each.value.private_service_connection_name : "pse-${var.name}"
-    private_connection_resource_id = azurerm_mssql_managed_instance.this.id
-    subresource_names              = ["managedInstance"]
+  body = {
+    properties = {
+      subnet = {
+        id = each.value.subnet_resource_id
+      }
+      privateLinkServiceConnections = [
+        {
+          name = each.value.private_service_connection_name != null ? each.value.private_service_connection_name : "pse-${var.name}"
+          properties = {
+            privateLinkServiceId = azapi_resource.mssql_managed_instance.id
+            groupIds             = ["managedInstance"]
+            requestMessage       = null
+            privateLinkServiceConnectionState = {
+              status      = "Approved"
+              description = "Auto-approved by Terraform"
+            }
+          }
+        }
+      ]
+      ipConfigurations = [
+        for ip_config in each.value.ip_configurations : {
+          name = ip_config.name
+          properties = {
+            privateIPAddress = ip_config.private_ip_address
+            groupId          = "managedInstance"
+            memberName       = "managedInstance"
+          }
+        }
+      ]
+      customNetworkInterfaceName = each.value.network_interface_name
+    }
+    tags = each.value.tags
   }
-  dynamic "ip_configuration" {
-    for_each = each.value.ip_configurations
 
-    content {
-      name               = ip_configuration.value.name
-      private_ip_address = ip_configuration.value.private_ip_address
-      member_name        = "managedInstance"
-      subresource_name   = "managedInstance"
+  schema_validation_enabled = false
+
+  lifecycle {
+    ignore_changes = [body.properties.privateDnsZoneConfigs]
+  }
+
+  depends_on = [
+    azapi_resource.mssql_managed_instance,
+  ]
+}
+
+resource "azapi_resource" "private_endpoint_application_security_group_association" {
+  for_each = local.private_endpoint_application_security_group_associations
+
+  type      = "Microsoft.Network/privateEndpoints/privateLinkServiceConnections/groupMembers@2023-04-01"
+  name      = "asg-${each.value.asg_name}"
+  parent_id = "${var.private_endpoints_manage_dns_zone_group ? azapi_resource.private_endpoint_managed_dns_zone_groups[each.value.pe_key].id : azapi_resource.private_endpoint_unmanaged_dns_zone_groups[each.value.pe_key].id}/privateLinkServiceConnections/${each.value.pe_key}"
+
+  body = {
+    properties = {
+      applicationSecurityGroup = {
+        id = each.value.asg_resource_id
+      }
     }
   }
 
-  lifecycle {
-    ignore_changes = [private_dns_zone_group]
-  }
-}
-
-resource "azurerm_private_endpoint_application_security_group_association" "this" {
-  for_each = local.private_endpoint_application_security_group_associations
-
-  application_security_group_id = each.value.asg_resource_id
-  private_endpoint_id           = var.private_endpoints_manage_dns_zone_group ? azurerm_private_endpoint.this_managed_dns_zone_groups[each.value.pe_key].id : azurerm_private_endpoint.this_unmanaged_dns_zone_groups[each.value.pe_key].id
+  schema_validation_enabled = false
 }
