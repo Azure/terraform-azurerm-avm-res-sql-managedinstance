@@ -141,15 +141,31 @@ resource "azapi_resource" "mssql_managed_instance_server_key" {
   read_headers   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   update_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
-  # Before deleting the server key, revert the encryption protector to ServiceManaged.
-  # Azure prevents deletion of a key that is currently set as the encryption protector.
-  provisioner "local-exec" {
-    command = "az rest --method PUT --uri '${self.parent_id}/encryptionProtector/current?api-version=2023-05-01-preview' --body '{\"properties\":{\"serverKeyType\":\"ServiceManaged\",\"serverKeyName\":\"ServiceManaged\"}}' --output none"
-    when    = destroy
-  }
-
   depends_on = [
     azapi_resource_action.sql_managed_instance_patch_identities,
+  ]
+}
+
+# Revert the encryption protector to ServiceManaged on destroy, before the server key is deleted.
+# Azure prevents deletion of a key that is currently set as the encryption protector.
+# Destroy order: this resource is destroyed first (runs the PUT to revert), then transparent_data_encryption,
+# then server_key — because destroy order is the reverse of the dependency chain.
+resource "azapi_resource_action" "mssql_managed_instance_revert_encryption_protector" {
+  count = var.transparent_data_encryption != null ? 1 : 0
+
+  method      = "PUT"
+  resource_id = "${azapi_resource.mssql_managed_instance.id}/encryptionProtector/current"
+  type        = "Microsoft.Sql/managedInstances/encryptionProtector@2023-05-01-preview"
+  body = {
+    properties = {
+      serverKeyType = "ServiceManaged"
+      serverKeyName = "ServiceManaged"
+    }
+  }
+  when = "destroy"
+
+  depends_on = [
+    azapi_resource_action.mssql_managed_instance_transparent_data_encryption,
   ]
 }
 
@@ -334,6 +350,10 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   depends_on = [
     azapi_resource_action.mssql_managed_instance_security_alert_policy,
   ]
+
+  lifecycle {
+    ignore_changes = [resource_id]
+  }
 }
 
 data "azurerm_client_config" "current" {}
