@@ -20,6 +20,16 @@ resource "azurerm_mssql_managed_instance" "this" {
   timezone_id                    = var.timezone_id
   zone_redundant_enabled         = var.zone_redundant_enabled
 
+  dynamic "azure_active_directory_administrator" {
+    for_each = try(var.active_directory_administrator.object_id, null) != null ? [var.active_directory_administrator] : []
+
+    content {
+      login_username = azure_active_directory_administrator.value.login_username
+      object_id      = azure_active_directory_administrator.value.object_id
+      principal_type = azure_active_directory_administrator.value.principal_type
+      tenant_id      = azure_active_directory_administrator.value.tenant_id
+    }
+  }
   dynamic "timeouts" {
     for_each = var.timeouts == null ? [] : [var.timeouts]
 
@@ -40,27 +50,6 @@ resource "azurerm_mssql_managed_instance" "this" {
       identity,
       proxy_override
     ]
-  }
-}
-
-resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" {
-  count = try(var.active_directory_administrator.object_id, null) == null ? 0 : 1
-
-  login_username              = var.active_directory_administrator.login_username
-  managed_instance_id         = azurerm_mssql_managed_instance.this.id
-  object_id                   = var.active_directory_administrator.object_id
-  tenant_id                   = var.active_directory_administrator.tenant_id
-  azuread_authentication_only = var.active_directory_administrator.azuread_authentication_only
-
-  dynamic "timeouts" {
-    for_each = var.active_directory_administrator.timeouts == null ? [] : [var.active_directory_administrator.timeouts]
-
-    content {
-      create = timeouts.value.create
-      delete = timeouts.value.delete
-      read   = timeouts.value.read
-      update = timeouts.value.update
-    }
   }
 }
 
@@ -93,10 +82,6 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
     read   = var.timeout.mssql_managed_instance_security_alert_policy.read
     update = var.timeout.mssql_managed_instance_security_alert_policy.update
   }
-
-  depends_on = [
-    azurerm_mssql_managed_instance_active_directory_administrator.this,
-  ]
 }
 
 resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {

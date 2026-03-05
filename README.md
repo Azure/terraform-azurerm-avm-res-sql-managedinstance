@@ -46,7 +46,6 @@ The following resources are used by this module:
 - [azurerm_monitor_diagnostic_setting.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
 - [azurerm_mssql_managed_database.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_database) (resource)
 - [azurerm_mssql_managed_instance.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance) (resource)
-- [azurerm_mssql_managed_instance_active_directory_administrator.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_active_directory_administrator) (resource)
 - [azurerm_mssql_managed_instance_failover_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_failover_group) (resource)
 - [azurerm_mssql_managed_instance_transparent_data_encryption.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_transparent_data_encryption) (resource)
 - [azurerm_private_endpoint.this_managed_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
@@ -132,32 +131,19 @@ The following input variables are optional (have default values):
 
 ### <a name="input_active_directory_administrator"></a> [active\_directory\_administrator](#input\_active\_directory\_administrator)
 
-Description: - `azuread_authentication_only` - (Optional) When `true`, only permit logins from AAD users and administrators. When `false`, also allow local database users.
-- `login_username` - (Required) The login name of the principal to set as the Managed Instance Administrator.
+Description: - `login_username` - (Required) The login name of the principal to set as the Managed Instance Administrator.
 - `object_id` - (Required) The Object ID of the principal to set as the Managed Instance Administrator.
+- `principal_type` - (Required) The type of the principal. Possible values are `Application`, `Group`, and `User`.
 - `tenant_id` - (Required) The Azure Active Directory Tenant ID.
-
----
-`timeouts` block supports the following:
-- `create` - (Defaults to 30 minutes) Used when creating the SQL Active Directory Administrator.
-- `delete` - (Defaults to 30 minutes) Used when deleting the SQL Active Directory Administrator.
-- `read` - (Defaults to 5 minutes) Used when retrieving the SQL Active Directory Administrator.
-- `update` - (Defaults to 30 minutes) Used when updating the SQL Active Directory Administrator.
 
 Type:
 
 ```hcl
 object({
-    azuread_authentication_only = optional(bool)
-    login_username              = optional(string)
-    object_id                   = optional(string)
-    tenant_id                   = optional(string)
-    timeouts = optional(object({
-      create = optional(string)
-      delete = optional(string)
-      read   = optional(string)
-      update = optional(string)
-    }))
+    login_username = optional(string)
+    object_id      = optional(string)
+    principal_type = optional(string)
+    tenant_id      = optional(string)
   })
 ```
 
