@@ -15,11 +15,22 @@ resource "azurerm_mssql_managed_instance" "this" {
   minimum_tls_version            = var.minimum_tls_version
   proxy_override                 = var.proxy_override
   public_data_endpoint_enabled   = var.public_data_endpoint_enabled
+  service_principal_type         = var.service_principal_enabled ? "SystemAssigned" : null
   storage_account_type           = var.storage_account_type
   tags                           = var.tags
   timezone_id                    = var.timezone_id
   zone_redundant_enabled         = var.zone_redundant_enabled
 
+  dynamic "azure_active_directory_administrator" {
+    for_each = try(var.active_directory_administrator.object_id, null) != null ? [var.active_directory_administrator] : []
+
+    content {
+      login_username = azure_active_directory_administrator.value.login_username
+      object_id      = azure_active_directory_administrator.value.object_id
+      principal_type = azure_active_directory_administrator.value.principal_type
+      tenant_id      = azure_active_directory_administrator.value.tenant_id
+    }
+  }
   dynamic "timeouts" {
     for_each = var.timeouts == null ? [] : [var.timeouts]
 
@@ -40,27 +51,6 @@ resource "azurerm_mssql_managed_instance" "this" {
       identity,
       proxy_override
     ]
-  }
-}
-
-resource "azurerm_mssql_managed_instance_active_directory_administrator" "this" {
-  count = try(var.active_directory_administrator.object_id, null) == null ? 0 : 1
-
-  login_username              = var.active_directory_administrator.login_username
-  managed_instance_id         = azurerm_mssql_managed_instance.this.id
-  object_id                   = var.active_directory_administrator.object_id
-  tenant_id                   = var.active_directory_administrator.tenant_id
-  azuread_authentication_only = var.active_directory_administrator.azuread_authentication_only
-
-  dynamic "timeouts" {
-    for_each = var.active_directory_administrator.timeouts == null ? [] : [var.active_directory_administrator.timeouts]
-
-    content {
-      create = timeouts.value.create
-      delete = timeouts.value.delete
-      read   = timeouts.value.read
-      update = timeouts.value.update
-    }
   }
 }
 
@@ -93,10 +83,6 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
     read   = var.timeout.mssql_managed_instance_security_alert_policy.read
     update = var.timeout.mssql_managed_instance_security_alert_policy.update
   }
-
-  depends_on = [
-    azurerm_mssql_managed_instance_active_directory_administrator.this,
-  ]
 }
 
 resource "azurerm_mssql_managed_instance_transparent_data_encryption" "this" {
@@ -196,33 +182,41 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   method      = "PATCH"
   resource_id = azurerm_mssql_managed_instance.this.id
   type        = "Microsoft.Sql/managedInstances@2023-05-01-preview"
-  body = {
-    identity = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0) ? {
-      type = local.managed_identities.system_assigned_user_assigned.this.type
-      userAssignedIdentities = (local.managed_identities.system_assigned_user_assigned.this.type == "UserAssigned") || (local.managed_identities.system_assigned_user_assigned.this.type == "SystemAssigned, UserAssigned") ? {
-        for id in tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) : id => {}
-      } : null
-    } : null,
-    properties = merge(
-      length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? {
-        primaryUserAssignedIdentityId = tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0]
-      } : {},
-      (var.service_principal_enabled || local.current_service_principal_enabled) ? {
-        servicePrincipal = {
-          type = "SystemAssigned"
-        }
-      } : {},
-      var.is_general_purpose_v2 ? {
-        isGeneralPurposeV2 = true
-      } : {},
-      var.storage_iops != null ? {
-        storageIOps = var.storage_iops
-      } : {},
-      var.memory_size_in_gb != null ? {
-        memorySizeInGB = var.memory_size_in_gb
-      } : {}
-    )
-  }
+  body = jsondecode(jsonencode(merge(
+    (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0) ? {
+      identity = merge(
+        {
+          type = local.managed_identities.system_assigned_user_assigned.this.type
+        },
+        (local.managed_identities.system_assigned_user_assigned.this.type == "UserAssigned") || (local.managed_identities.system_assigned_user_assigned.this.type == "SystemAssigned, UserAssigned") ? {
+          userAssignedIdentities = {
+            for id in tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) : id => {}
+          }
+        } : {}
+      )
+    } : {},
+    {
+      properties = merge(
+        length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? {
+          primaryUserAssignedIdentityId = tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0]
+        } : {},
+        (var.service_principal_enabled || local.current_service_principal_enabled) ? {
+          servicePrincipal = {
+            type = "SystemAssigned"
+          }
+        } : {},
+        var.is_general_purpose_v2 ? {
+          isGeneralPurposeV2 = true
+        } : {},
+        var.storage_iops != null ? {
+          storageIOps = var.storage_iops
+        } : {},
+        var.memory_size_in_gb != null ? {
+          memorySizeInGB = var.memory_size_in_gb
+        } : {}
+      )
+    }
+  )))
   locks = [
     azurerm_mssql_managed_instance.this.id
   ]
