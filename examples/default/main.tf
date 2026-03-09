@@ -241,7 +241,8 @@ module "sqlmi_test" {
     system_assigned            = true
     user_assigned_resource_ids = [azurerm_user_assigned_identity.uami.id]
   }
-  zone_redundant_enabled = false
+  service_principal_enabled = true
+  zone_redundant_enabled    = false
 
   depends_on = [
     azurerm_subnet_network_security_group_association.this,
