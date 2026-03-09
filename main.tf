@@ -15,6 +15,7 @@ resource "azurerm_mssql_managed_instance" "this" {
   minimum_tls_version            = var.minimum_tls_version
   proxy_override                 = var.proxy_override
   public_data_endpoint_enabled   = var.public_data_endpoint_enabled
+  service_principal_type         = var.service_principal_enabled ? "SystemAssigned" : null
   storage_account_type           = var.storage_account_type
   tags                           = var.tags
   timezone_id                    = var.timezone_id
@@ -48,8 +49,7 @@ resource "azurerm_mssql_managed_instance" "this" {
   lifecycle {
     ignore_changes = [
       identity,
-      proxy_override,
-      service_principal_type
+      proxy_override
     ]
   }
 }
