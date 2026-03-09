@@ -48,7 +48,8 @@ resource "azurerm_mssql_managed_instance" "this" {
   lifecycle {
     ignore_changes = [
       identity,
-      proxy_override
+      proxy_override,
+      service_principal_type
     ]
   }
 }
