@@ -43,10 +43,11 @@ variable "vcores" {
 
 variable "active_directory_administrator" {
   type = object({
-    login_username = optional(string)
-    object_id      = optional(string)
-    principal_type = optional(string)
-    tenant_id      = optional(string)
+    login_username                      = optional(string)
+    object_id                           = optional(string)
+    principal_type                      = optional(string)
+    azuread_authentication_only_enabled = optional(bool)
+    tenant_id                           = optional(string)
   })
   default     = {}
   description = <<-DESCRIPTION
@@ -54,6 +55,7 @@ variable "active_directory_administrator" {
  - `object_id` - (Required) The Object ID of the principal to set as the Managed Instance Administrator.
  - `principal_type` - (Required) The type of the principal. Possible values are `Application`, `Group`, and `User`.
  - `tenant_id` - (Required) The Azure Active Directory Tenant ID.
+ - `azuread_authentication_only_enabled` - (Optional) Whether Azure AD authentication only is enabled for the Managed Instance Administrator.
 DESCRIPTION
   nullable    = false
 }

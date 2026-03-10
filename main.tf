@@ -25,10 +25,11 @@ resource "azurerm_mssql_managed_instance" "this" {
     for_each = try(var.active_directory_administrator.object_id, null) != null ? [var.active_directory_administrator] : []
 
     content {
-      login_username = azure_active_directory_administrator.value.login_username
-      object_id      = azure_active_directory_administrator.value.object_id
-      principal_type = azure_active_directory_administrator.value.principal_type
-      tenant_id      = azure_active_directory_administrator.value.tenant_id
+      login_username                      = azure_active_directory_administrator.value.login_username
+      object_id                           = azure_active_directory_administrator.value.object_id
+      principal_type                      = azure_active_directory_administrator.value.principal_type
+      azuread_authentication_only_enabled = azure_active_directory_administrator.value.azuread_authentication_only_enabled
+      tenant_id                           = azure_active_directory_administrator.value.tenant_id
     }
   }
   dynamic "timeouts" {
