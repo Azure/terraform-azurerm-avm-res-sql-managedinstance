@@ -73,6 +73,33 @@ variable "collation" {
   description = "(Optional) Specifies how the SQL Managed Instance will be collated. Default value is `SQL_Latin1_General_CP1_CI_AS`. Changing this forces a new resource to be created."
 }
 
+variable "database_format" {
+  type        = string
+  default     = "SQLServer2022"
+  description = <<-DESCRIPTION
+(Optional) Specifies the internal format of the SQL Managed Instance databases specific to the SQL engine version.
+Possible values are `AlwaysUpToDate` and `SQLServer2022` (supported by the current azurerm provider).
+
+- `SQLServer2022` - (Default) Pin the database format to SQL Server 2022 compatibility.
+- `AlwaysUpToDate` - Always use the latest database format (aligns with the SQL Server 2025 update policy when the instance is on an always-up-to-date update policy).
+
+Note: Changing from `AlwaysUpToDate` to `SQLServer2022` forces a new resource to be created.
+Note: A future `SQLServer2025` value is expected once the azurerm provider adds support for the
+SQL Server 2025 database format (GA March 2026). Use `AlwaysUpToDate` to get the latest engine
+format in the meantime.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/update-policy
+
+Defaults to `SQLServer2022`.
+DESCRIPTION
+  nullable    = false
+
+  validation {
+    condition     = contains(["AlwaysUpToDate", "SQLServer2022"], var.database_format)
+    error_message = "database_format must be one of: 'AlwaysUpToDate', 'SQLServer2022'."
+  }
+}
+
 variable "dns_zone_partner_id" {
   type        = string
   default     = null
@@ -131,8 +158,22 @@ variable "minimum_tls_version" {
 
 variable "proxy_override" {
   type        = string
-  default     = "Default"
-  description = "(Optional) Specifies how the SQL Managed Instance will be accessed. Default value is `Default`. Valid values include `Default`, `Proxy`, and `Redirect`."
+  default     = "Redirect"
+  description = <<-DESCRIPTION
+(Optional) Specifies how the SQL Managed Instance will be accessed.
+Possible values are `Default`, `Proxy`, and `Redirect`. Defaults to `Redirect`.
+
+Note: As of October 2025, `Redirect` is Azure's default connection type for all new instances,
+providing better latency and throughput than `Proxy`. The value `Default` maps to the legacy
+`Proxy` connection type for instances created before October 2025.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/connection-types-overview
+DESCRIPTION
+
+  validation {
+    condition     = contains(["Default", "Proxy", "Redirect"], var.proxy_override)
+    error_message = "proxy_override must be one of: 'Default', 'Proxy', 'Redirect'."
+  }
 }
 
 variable "public_data_endpoint_enabled" {
@@ -211,7 +252,12 @@ DESCRIPTION
 variable "storage_account_type" {
   type        = string
   default     = "ZRS"
-  description = "(Optional) Specifies the storage account type used to store backups for this database. Changing this forces a new resource to be created. Possible values are `GRS`, `LRS` and `ZRS`. Defaults to `GRS`."
+  description = "(Optional) Specifies the storage account type used to store backups for this database. Changing this forces a new resource to be created. Possible values are `GRS`, `GZRS`, `LRS`, and `ZRS`. Defaults to `ZRS`."
+
+  validation {
+    condition     = contains(["GRS", "GZRS", "LRS", "ZRS"], var.storage_account_type)
+    error_message = "storage_account_type must be one of: 'GRS', 'GZRS', 'LRS', 'ZRS'."
+  }
 }
 
 variable "storage_iops" {
@@ -315,6 +361,92 @@ variable "vulnerability_assessment" {
  - `read` - (Defaults to 5 minutes) Used when retrieving the Vulnerability Assessment.
  - `update` - (Defaults to 60 minutes) Used when updating the Vulnerability Assessment.
 DESCRIPTION
+}
+
+variable "free_offer_enabled" {
+  type        = bool
+  default     = false
+  description = <<-DESCRIPTION
+(Optional) Whether to enroll this SQL Managed Instance in the free offer (12-month free trial, GA May 2025).
+
+When enabled, the instance `pricingModel` is set to `FreeOffer` via the Azure REST API. The free offer
+provides 12 months of free usage after the instance is created, after which standard charges apply.
+
+Limitations:
+- Only one free instance is allowed per Azure subscription.
+- Available in all regions and subscription types that support paid SQL Managed Instance.
+- Cannot be reverted back to `FreeOffer` once changed to `Regular`.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/free-offer
+
+Defaults to `false`.
+DESCRIPTION
+  nullable    = false
+}
+
+variable "hybrid_secondary_usage" {
+  type        = string
+  default     = null
+  description = <<-DESCRIPTION
+(Optional) Specifies the hybrid secondary usage for disaster recovery of the SQL Managed Instance.
+Possible values are `Active` and `Passive`. Defaults to `Active` (set by Azure when not specified).
+
+Setting to `Passive` allows using the SQL Managed Instance as a passive disaster-recovery replica
+at no additional licensing cost under Azure Hybrid Benefit.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/managed-instance-hybrid-benefit
+DESCRIPTION
+
+  validation {
+    condition     = var.hybrid_secondary_usage == null || var.hybrid_secondary_usage == "Active" || var.hybrid_secondary_usage == "Passive"
+    error_message = "hybrid_secondary_usage must be one of: 'Active', 'Passive'."
+  }
+}
+
+variable "start_stop_schedule" {
+  type = object({
+    description = optional(string)
+    timezone_id = optional(string, "UTC")
+    schedule = list(object({
+      start_day  = string
+      start_time = string
+      stop_day   = string
+      stop_time  = string
+    }))
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+  default     = null
+  description = <<-DESCRIPTION
+(Optional) Configuration for the SQL Managed Instance start/stop schedule. Set to `null` to disable.
+
+This feature enables cost optimization by automatically stopping the instance outside of business hours.
+At least one `schedule` entry is required when the variable is provided.
+
+ - `description` - (Optional) A description for the schedule.
+ - `timezone_id` - (Optional) The Windows timezone name for the schedule (e.g. `"UTC"`, `"Pacific Standard Time"`). Defaults to `"UTC"`.
+ - `schedule` - (Required) One or more schedule blocks, each defining a start and stop window:
+   - `start_day` - (Required) The day the instance starts. Possible values: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`.
+   - `start_time` - (Required) The start time in `HH:MM` 24-hour format (e.g. `"08:00"`).
+   - `stop_day` - (Required) The day the instance stops.
+   - `stop_time` - (Required) The stop time in `HH:MM` 24-hour format (e.g. `"18:00"`).
+
+ ---
+ `timeouts` block supports the following:
+ - `create` - (Defaults to 30 minutes) Used when creating the Start/Stop Schedule.
+ - `delete` - (Defaults to 30 minutes) Used when deleting the Start/Stop Schedule.
+ - `read` - (Defaults to 5 minutes) Used when retrieving the Start/Stop Schedule.
+ - `update` - (Defaults to 30 minutes) Used when updating the Start/Stop Schedule.
+DESCRIPTION
+
+  validation {
+    condition     = var.start_stop_schedule == null || length(try(var.start_stop_schedule.schedule, [])) > 0
+    error_message = "start_stop_schedule.schedule must contain at least one schedule entry."
+  }
 }
 
 variable "zone_redundant_enabled" {

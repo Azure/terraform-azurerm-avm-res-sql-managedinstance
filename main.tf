@@ -10,7 +10,9 @@ resource "azurerm_mssql_managed_instance" "this" {
   administrator_login            = var.administrator_login
   administrator_login_password   = var.administrator_login_password
   collation                      = var.collation
+  database_format                = var.database_format
   dns_zone_partner_id            = var.dns_zone_partner_id
+  hybrid_secondary_usage         = var.hybrid_secondary_usage
   maintenance_configuration_name = var.maintenance_configuration_name
   minimum_tls_version            = var.minimum_tls_version
   proxy_override                 = var.proxy_override
@@ -178,7 +180,7 @@ resource "azurerm_role_assignment" "this" {
 # prevents system & user assigned identities being set at the same time.
 # https://github.com/hashicorp/terraform-provider-azurerm/issues/19802
 resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
-  count = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0 || var.service_principal_enabled || var.is_general_purpose_v2 || var.storage_iops != null || var.memory_size_in_gb != null) ? 1 : 0
+  count = (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0 || var.service_principal_enabled || var.is_general_purpose_v2 || var.storage_iops != null || var.memory_size_in_gb != null || var.free_offer_enabled) ? 1 : 0
 
   method      = "PATCH"
   resource_id = azurerm_mssql_managed_instance.this.id
@@ -198,7 +200,7 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
     } : {},
     {
       properties = merge(
-        length(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids) > 0 ? {
+        length(try(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids, [])) > 0 ? {
           primaryUserAssignedIdentityId = tolist(local.managed_identities.system_assigned_user_assigned.this.user_assigned_resource_ids)[0]
         } : {},
         (var.service_principal_enabled || local.current_service_principal_enabled) ? {
@@ -214,6 +216,9 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
         } : {},
         var.memory_size_in_gb != null ? {
           memorySizeInGB = var.memory_size_in_gb
+        } : {},
+        var.free_offer_enabled ? {
+          pricingModel = "FreeOffer"
         } : {}
       )
     }

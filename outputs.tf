@@ -1,6 +1,21 @@
+output "database_format" {
+  description = "The internal format of the SQL Managed Instance databases. Reflects the active update policy: 'AlwaysUpToDate', 'SQLServer2022', or 'SQLServer2025'."
+  value       = azurerm_mssql_managed_instance.this.database_format
+}
+
+output "free_offer_enabled" {
+  description = "Whether the SQL Managed Instance is enrolled in the free 12-month offer. Reflects the pricingModel set via the Azure REST API."
+  value       = try(jsondecode(data.azapi_resource.identity.output).properties.pricingModel == "FreeOffer", false)
+}
+
 output "identity" {
   description = "Managed identities for the SQL MI instance.  This is not available from the `resource` output because AzureRM doesn't yet support adding both User and System Assigned identities."
   value       = try(jsondecode(data.azapi_resource.identity.output).identity, null)
+}
+
+output "start_stop_schedule" {
+  description = "The start/stop schedule configuration for the SQL Managed Instance, if configured."
+  value       = var.start_stop_schedule != null ? azurerm_mssql_managed_instance_start_stop_schedule.this[0] : null
 }
 
 output "is_general_purpose_v2" {
@@ -24,6 +39,7 @@ output "private_endpoints" {
 # https://azure.github.io/Azure-Verified-Modules/specs/terraform/#id-tffr2---category-outputs---additional-terraform-outputs
 output "resource" {
   description = "This is the full output for the resource."
+  sensitive   = true
   value       = azurerm_mssql_managed_instance.this
 }
 
