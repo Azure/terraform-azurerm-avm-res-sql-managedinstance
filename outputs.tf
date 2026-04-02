@@ -3,6 +3,11 @@ output "identity" {
   value       = try(jsondecode(data.azapi_resource.identity.output).identity, null)
 }
 
+output "database_format" {
+  description = "The internal format of instance databases reflecting the SQL engine version (update policy). Possible values are 'AlwaysUpToDate', 'SQLServer2022', or 'SQLServer2025'."
+  value       = try(jsondecode(data.azapi_resource.identity.output).properties.databaseFormat, null)
+}
+
 output "is_general_purpose_v2" {
   description = "Whether the SQL Managed Instance is using the Next-gen General Purpose (GPv2) service tier."
   value       = try(jsondecode(data.azapi_resource.identity.output).properties.isGeneralPurposeV2, false)
@@ -18,6 +23,11 @@ output "private_endpoints" {
   A map of the private endpoints created.
   DESCRIPTION
   value       = var.private_endpoints_manage_dns_zone_group ? azurerm_private_endpoint.this_managed_dns_zone_groups : azurerm_private_endpoint.this_unmanaged_dns_zone_groups
+}
+
+output "pricing_model" {
+  description = "The pricing model of the SQL Managed Instance. Possible values are 'Regular' or 'Freemium'."
+  value       = try(jsondecode(data.azapi_resource.identity.output).properties.pricingModel, null)
 }
 
 # Module owners should include the full resource via a 'resource' output
