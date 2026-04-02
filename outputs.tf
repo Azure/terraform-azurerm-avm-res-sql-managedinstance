@@ -13,11 +13,6 @@ output "identity" {
   value       = try(jsondecode(data.azapi_resource.identity.output).identity, null)
 }
 
-output "start_stop_schedule" {
-  description = "The start/stop schedule configuration for the SQL Managed Instance, if configured."
-  value       = var.start_stop_schedule != null ? azurerm_mssql_managed_instance_start_stop_schedule.this[0] : null
-}
-
 output "is_general_purpose_v2" {
   description = "Whether the SQL Managed Instance is using the Next-gen General Purpose (GPv2) service tier."
   value       = try(jsondecode(data.azapi_resource.identity.output).properties.isGeneralPurposeV2, false)
@@ -51,6 +46,11 @@ output "resource_id" {
 output "service_principal" {
   description = "The system-assigned service principal details for the SQL Managed Instance. Required for Windows Authentication with Microsoft Entra ID."
   value       = try(jsondecode(data.azapi_resource.identity.output).properties.servicePrincipal, null)
+}
+
+output "start_stop_schedule" {
+  description = "The start/stop schedule configuration for the SQL Managed Instance, if configured."
+  value       = var.start_stop_schedule != null ? azurerm_mssql_managed_instance_start_stop_schedule.this[0] : null
 }
 
 output "storage_iops" {

@@ -106,6 +106,46 @@ variable "dns_zone_partner_id" {
   description = "(Optional) The ID of the SQL Managed Instance which will share the DNS zone. This is a prerequisite for creating an `azurerm_mssql_managed_instance_failover_group`. Setting this after creation forces a new resource to be created."
 }
 
+variable "free_offer_enabled" {
+  type        = bool
+  default     = false
+  description = <<-DESCRIPTION
+(Optional) Whether to enroll this SQL Managed Instance in the free offer (12-month free trial, GA May 2025).
+
+When enabled, the instance `pricingModel` is set to `FreeOffer` via the Azure REST API. The free offer
+provides 12 months of free usage after the instance is created, after which standard charges apply.
+
+Limitations:
+- Only one free instance is allowed per Azure subscription.
+- Available in all regions and subscription types that support paid SQL Managed Instance.
+- Cannot be reverted back to `FreeOffer` once changed to `Regular`.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/free-offer
+
+Defaults to `false`.
+DESCRIPTION
+  nullable    = false
+}
+
+variable "hybrid_secondary_usage" {
+  type        = string
+  default     = null
+  description = <<-DESCRIPTION
+(Optional) Specifies the hybrid secondary usage for disaster recovery of the SQL Managed Instance.
+Possible values are `Active` and `Passive`. Defaults to `Active` (set by Azure when not specified).
+
+Setting to `Passive` allows using the SQL Managed Instance as a passive disaster-recovery replica
+at no additional licensing cost under Azure Hybrid Benefit.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/managed-instance-hybrid-benefit
+DESCRIPTION
+
+  validation {
+    condition     = var.hybrid_secondary_usage == null || var.hybrid_secondary_usage == "Active" || var.hybrid_secondary_usage == "Passive"
+    error_message = "hybrid_secondary_usage must be one of: 'Active', 'Passive'."
+  }
+}
+
 variable "is_general_purpose_v2" {
   type        = bool
   default     = false
@@ -231,6 +271,52 @@ See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/winauth-
 Defaults to `false`.
 DESCRIPTION
   nullable    = false
+}
+
+variable "start_stop_schedule" {
+  type = object({
+    description = optional(string)
+    timezone_id = optional(string, "UTC")
+    schedule = list(object({
+      start_day  = string
+      start_time = string
+      stop_day   = string
+      stop_time  = string
+    }))
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+  default     = null
+  description = <<-DESCRIPTION
+(Optional) Configuration for the SQL Managed Instance start/stop schedule. Set to `null` to disable.
+
+This feature enables cost optimization by automatically stopping the instance outside of business hours.
+At least one `schedule` entry is required when the variable is provided.
+
+ - `description` - (Optional) A description for the schedule.
+ - `timezone_id` - (Optional) The Windows timezone name for the schedule (e.g. `"UTC"`, `"Pacific Standard Time"`). Defaults to `"UTC"`.
+ - `schedule` - (Required) One or more schedule blocks, each defining a start and stop window:
+   - `start_day` - (Required) The day the instance starts. Possible values: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`.
+   - `start_time` - (Required) The start time in `HH:MM` 24-hour format (e.g. `"08:00"`).
+   - `stop_day` - (Required) The day the instance stops.
+   - `stop_time` - (Required) The stop time in `HH:MM` 24-hour format (e.g. `"18:00"`).
+
+ ---
+ `timeouts` block supports the following:
+ - `create` - (Defaults to 30 minutes) Used when creating the Start/Stop Schedule.
+ - `delete` - (Defaults to 30 minutes) Used when deleting the Start/Stop Schedule.
+ - `read` - (Defaults to 5 minutes) Used when retrieving the Start/Stop Schedule.
+ - `update` - (Defaults to 30 minutes) Used when updating the Start/Stop Schedule.
+DESCRIPTION
+
+  validation {
+    condition     = var.start_stop_schedule == null || length(try(var.start_stop_schedule.schedule, [])) > 0
+    error_message = "start_stop_schedule.schedule must contain at least one schedule entry."
+  }
 }
 
 variable "storage_account_resource_id" {
@@ -361,92 +447,6 @@ variable "vulnerability_assessment" {
  - `read` - (Defaults to 5 minutes) Used when retrieving the Vulnerability Assessment.
  - `update` - (Defaults to 60 minutes) Used when updating the Vulnerability Assessment.
 DESCRIPTION
-}
-
-variable "free_offer_enabled" {
-  type        = bool
-  default     = false
-  description = <<-DESCRIPTION
-(Optional) Whether to enroll this SQL Managed Instance in the free offer (12-month free trial, GA May 2025).
-
-When enabled, the instance `pricingModel` is set to `FreeOffer` via the Azure REST API. The free offer
-provides 12 months of free usage after the instance is created, after which standard charges apply.
-
-Limitations:
-- Only one free instance is allowed per Azure subscription.
-- Available in all regions and subscription types that support paid SQL Managed Instance.
-- Cannot be reverted back to `FreeOffer` once changed to `Regular`.
-
-See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/free-offer
-
-Defaults to `false`.
-DESCRIPTION
-  nullable    = false
-}
-
-variable "hybrid_secondary_usage" {
-  type        = string
-  default     = null
-  description = <<-DESCRIPTION
-(Optional) Specifies the hybrid secondary usage for disaster recovery of the SQL Managed Instance.
-Possible values are `Active` and `Passive`. Defaults to `Active` (set by Azure when not specified).
-
-Setting to `Passive` allows using the SQL Managed Instance as a passive disaster-recovery replica
-at no additional licensing cost under Azure Hybrid Benefit.
-
-See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/managed-instance-hybrid-benefit
-DESCRIPTION
-
-  validation {
-    condition     = var.hybrid_secondary_usage == null || var.hybrid_secondary_usage == "Active" || var.hybrid_secondary_usage == "Passive"
-    error_message = "hybrid_secondary_usage must be one of: 'Active', 'Passive'."
-  }
-}
-
-variable "start_stop_schedule" {
-  type = object({
-    description = optional(string)
-    timezone_id = optional(string, "UTC")
-    schedule = list(object({
-      start_day  = string
-      start_time = string
-      stop_day   = string
-      stop_time  = string
-    }))
-    timeouts = optional(object({
-      create = optional(string)
-      delete = optional(string)
-      read   = optional(string)
-      update = optional(string)
-    }))
-  })
-  default     = null
-  description = <<-DESCRIPTION
-(Optional) Configuration for the SQL Managed Instance start/stop schedule. Set to `null` to disable.
-
-This feature enables cost optimization by automatically stopping the instance outside of business hours.
-At least one `schedule` entry is required when the variable is provided.
-
- - `description` - (Optional) A description for the schedule.
- - `timezone_id` - (Optional) The Windows timezone name for the schedule (e.g. `"UTC"`, `"Pacific Standard Time"`). Defaults to `"UTC"`.
- - `schedule` - (Required) One or more schedule blocks, each defining a start and stop window:
-   - `start_day` - (Required) The day the instance starts. Possible values: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`.
-   - `start_time` - (Required) The start time in `HH:MM` 24-hour format (e.g. `"08:00"`).
-   - `stop_day` - (Required) The day the instance stops.
-   - `stop_time` - (Required) The stop time in `HH:MM` 24-hour format (e.g. `"18:00"`).
-
- ---
- `timeouts` block supports the following:
- - `create` - (Defaults to 30 minutes) Used when creating the Start/Stop Schedule.
- - `delete` - (Defaults to 30 minutes) Used when deleting the Start/Stop Schedule.
- - `read` - (Defaults to 5 minutes) Used when retrieving the Start/Stop Schedule.
- - `update` - (Defaults to 30 minutes) Used when updating the Start/Stop Schedule.
-DESCRIPTION
-
-  validation {
-    condition     = var.start_stop_schedule == null || length(try(var.start_stop_schedule.schedule, [])) > 0
-    error_message = "start_stop_schedule.schedule must contain at least one schedule entry."
-  }
 }
 
 variable "zone_redundant_enabled" {

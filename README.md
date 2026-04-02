@@ -47,6 +47,7 @@ The following resources are used by this module:
 - [azurerm_mssql_managed_database.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_database) (resource)
 - [azurerm_mssql_managed_instance.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance) (resource)
 - [azurerm_mssql_managed_instance_failover_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_failover_group) (resource)
+- [azurerm_mssql_managed_instance_start_stop_schedule.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_start_stop_schedule) (resource)
 - [azurerm_mssql_managed_instance_transparent_data_encryption.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/mssql_managed_instance_transparent_data_encryption) (resource)
 - [azurerm_private_endpoint.this_managed_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
 - [azurerm_private_endpoint.this_unmanaged_dns_zone_groups](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (resource)
@@ -166,6 +167,27 @@ Description: (Optional) Specifies how the SQL Managed Instance will be collated.
 Type: `string`
 
 Default: `null`
+
+### <a name="input_database_format"></a> [database\_format](#input\_database\_format)
+
+Description: (Optional) Specifies the internal format of the SQL Managed Instance databases specific to the SQL engine version.  
+Possible values are `AlwaysUpToDate` and `SQLServer2022` (supported by the current azurerm provider).
+
+- `SQLServer2022` - (Default) Pin the database format to SQL Server 2022 compatibility.
+- `AlwaysUpToDate` - Always use the latest database format (aligns with the SQL Server 2025 update policy when the instance is on an always-up-to-date update policy).
+
+Note: Changing from `AlwaysUpToDate` to `SQLServer2022` forces a new resource to be created.  
+Note: A future `SQLServer2025` value is expected once the azurerm provider adds support for the  
+SQL Server 2025 database format (GA March 2026). Use `AlwaysUpToDate` to get the latest engine  
+format in the meantime.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/update-policy
+
+Defaults to `SQLServer2022`.
+
+Type: `string`
+
+Default: `"SQLServer2022"`
 
 ### <a name="input_databases"></a> [databases](#input\_databases)
 
@@ -316,6 +338,40 @@ map(object({
 ```
 
 Default: `{}`
+
+### <a name="input_free_offer_enabled"></a> [free\_offer\_enabled](#input\_free\_offer\_enabled)
+
+Description: (Optional) Whether to enroll this SQL Managed Instance in the free offer (12-month free trial, GA May 2025).
+
+When enabled, the instance `pricingModel` is set to `FreeOffer` via the Azure REST API. The free offer  
+provides 12 months of free usage after the instance is created, after which standard charges apply.
+
+Limitations:
+- Only one free instance is allowed per Azure subscription.
+- Available in all regions and subscription types that support paid SQL Managed Instance.
+- Cannot be reverted back to `FreeOffer` once changed to `Regular`.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/free-offer
+
+Defaults to `false`.
+
+Type: `bool`
+
+Default: `false`
+
+### <a name="input_hybrid_secondary_usage"></a> [hybrid\_secondary\_usage](#input\_hybrid\_secondary\_usage)
+
+Description: (Optional) Specifies the hybrid secondary usage for disaster recovery of the SQL Managed Instance.  
+Possible values are `Active` and `Passive`. Defaults to `Active` (set by Azure when not specified).
+
+Setting to `Passive` allows using the SQL Managed Instance as a passive disaster-recovery replica  
+at no additional licensing cost under Azure Hybrid Benefit.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/managed-instance-hybrid-benefit
+
+Type: `string`
+
+Default: `null`
 
 ### <a name="input_is_general_purpose_v2"></a> [is\_general\_purpose\_v2](#input\_is\_general\_purpose\_v2)
 
@@ -473,11 +529,18 @@ Default: `true`
 
 ### <a name="input_proxy_override"></a> [proxy\_override](#input\_proxy\_override)
 
-Description: (Optional) Specifies how the SQL Managed Instance will be accessed. Default value is `Default`. Valid values include `Default`, `Proxy`, and `Redirect`.
+Description: (Optional) Specifies how the SQL Managed Instance will be accessed.  
+Possible values are `Default`, `Proxy`, and `Redirect`. Defaults to `Redirect`.
+
+Note: As of October 2025, `Redirect` is Azure's default connection type for all new instances,  
+providing better latency and throughput than `Proxy`. The value `Default` maps to the legacy
+`Proxy` connection type for instances created before October 2025.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/connection-types-overview
 
 Type: `string`
 
-Default: `"Default"`
+Default: `"Redirect"`
 
 ### <a name="input_public_data_endpoint_enabled"></a> [public\_data\_endpoint\_enabled](#input\_public\_data\_endpoint\_enabled)
 
@@ -609,6 +672,51 @@ Type: `bool`
 
 Default: `false`
 
+### <a name="input_start_stop_schedule"></a> [start\_stop\_schedule](#input\_start\_stop\_schedule)
+
+Description: (Optional) Configuration for the SQL Managed Instance start/stop schedule. Set to `null` to disable.
+
+This feature enables cost optimization by automatically stopping the instance outside of business hours.  
+At least one `schedule` entry is required when the variable is provided.
+
+ - `description` - (Optional) A description for the schedule.
+ - `timezone_id` - (Optional) The Windows timezone name for the schedule (e.g. `"UTC"`, `"Pacific Standard Time"`). Defaults to `"UTC"`.
+ - `schedule` - (Required) One or more schedule blocks, each defining a start and stop window:
+   - `start_day` - (Required) The day the instance starts. Possible values: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`.
+   - `start_time` - (Required) The start time in `HH:MM` 24-hour format (e.g. `"08:00"`).
+   - `stop_day` - (Required) The day the instance stops.
+   - `stop_time` - (Required) The stop time in `HH:MM` 24-hour format (e.g. `"18:00"`).
+
+ ---
+ `timeouts` block supports the following:
+ - `create` - (Defaults to 30 minutes) Used when creating the Start/Stop Schedule.
+ - `delete` - (Defaults to 30 minutes) Used when deleting the Start/Stop Schedule.
+ - `read` - (Defaults to 5 minutes) Used when retrieving the Start/Stop Schedule.
+ - `update` - (Defaults to 30 minutes) Used when updating the Start/Stop Schedule.
+
+Type:
+
+```hcl
+object({
+    description = optional(string)
+    timezone_id = optional(string, "UTC")
+    schedule = list(object({
+      start_day  = string
+      start_time = string
+      stop_day   = string
+      stop_time  = string
+    }))
+    timeouts = optional(object({
+      create = optional(string)
+      delete = optional(string)
+      read   = optional(string)
+      update = optional(string)
+    }))
+  })
+```
+
+Default: `null`
+
 ### <a name="input_storage_account_resource_id"></a> [storage\_account\_resource\_id](#input\_storage\_account\_resource\_id)
 
 Description: (Optional) Storage Account to store vulnerability assessments.
@@ -626,7 +734,7 @@ Default: `null`
 
 ### <a name="input_storage_account_type"></a> [storage\_account\_type](#input\_storage\_account\_type)
 
-Description: (Optional) Specifies the storage account type used to store backups for this database. Changing this forces a new resource to be created. Possible values are `GRS`, `LRS` and `ZRS`. Defaults to `GRS`.
+Description: (Optional) Specifies the storage account type used to store backups for this database. Changing this forces a new resource to be created. Possible values are `GRS`, `GZRS`, `LRS`, and `ZRS`. Defaults to `ZRS`.
 
 Type: `string`
 
@@ -801,6 +909,14 @@ Default: `true`
 
 The following outputs are exported:
 
+### <a name="output_database_format"></a> [database\_format](#output\_database\_format)
+
+Description: The internal format of the SQL Managed Instance databases. Reflects the active update policy: 'AlwaysUpToDate', 'SQLServer2022', or 'SQLServer2025'.
+
+### <a name="output_free_offer_enabled"></a> [free\_offer\_enabled](#output\_free\_offer\_enabled)
+
+Description: Whether the SQL Managed Instance is enrolled in the free 12-month offer. Reflects the pricingModel set via the Azure REST API.
+
 ### <a name="output_identity"></a> [identity](#output\_identity)
 
 Description: Managed identities for the SQL MI instance.  This is not available from the `resource` output because AzureRM doesn't yet support adding both User and System Assigned identities.
@@ -828,6 +944,10 @@ Description: This is the resource ID of the resource.
 ### <a name="output_service_principal"></a> [service\_principal](#output\_service\_principal)
 
 Description: The system-assigned service principal details for the SQL Managed Instance. Required for Windows Authentication with Microsoft Entra ID.
+
+### <a name="output_start_stop_schedule"></a> [start\_stop\_schedule](#output\_start\_stop\_schedule)
+
+Description: The start/stop schedule configuration for the SQL Managed Instance, if configured.
 
 ### <a name="output_storage_iops"></a> [storage\_iops](#output\_storage\_iops)
 
