@@ -1,26 +1,26 @@
 output "database_format" {
   description = "The internal format of instance databases reflecting the SQL engine version (update policy). Possible values are 'AlwaysUpToDate', 'SQLServer2022', or 'SQLServer2025'."
-  value       = try(jsondecode(data.azapi_resource.identity.output).properties.databaseFormat, null)
+  value       = try(data.azapi_resource.identity.output.properties.databaseFormat, null)
 }
 
 output "identity" {
   description = "Managed identities for the SQL MI instance.  This is not available from the `resource` output because AzureRM doesn't yet support adding both User and System Assigned identities."
-  value       = try(jsondecode(data.azapi_resource.identity.output).identity, null)
+  value       = try(data.azapi_resource.identity.output.identity, null)
 }
 
 output "is_general_purpose_v2" {
   description = "Whether the SQL Managed Instance is using the Next-gen General Purpose (GPv2) service tier."
-  value       = try(jsondecode(data.azapi_resource.identity.output).properties.isGeneralPurposeV2, false)
+  value       = try(data.azapi_resource.identity.output.properties.isGeneralPurposeV2, false)
 }
 
 output "memory_size_in_gb" {
   description = "The actual memory size in GB allocated to the SQL Managed Instance."
-  value       = try(jsondecode(data.azapi_resource.identity.output).properties.memorySizeInGB, null)
+  value       = try(data.azapi_resource.identity.output.properties.memorySizeInGB, null)
 }
 
 output "pricing_model" {
   description = "The pricing model of the SQL Managed Instance. Possible values are 'Regular' or 'Freemium'."
-  value       = try(jsondecode(data.azapi_resource.identity.output).properties.pricingModel, null)
+  value       = try(data.azapi_resource.identity.output.properties.pricingModel, null)
 }
 
 output "private_endpoints" {
@@ -44,10 +44,10 @@ output "resource_id" {
 
 output "service_principal" {
   description = "The system-assigned service principal details for the SQL Managed Instance. Required for Windows Authentication with Microsoft Entra ID."
-  value       = try(jsondecode(data.azapi_resource.identity.output).properties.servicePrincipal, null)
+  value       = try(data.azapi_resource.identity.output.properties.servicePrincipal, null)
 }
 
 output "storage_iops" {
   description = "The actual storage IOPS allocated to the SQL Managed Instance."
-  value       = try(jsondecode(data.azapi_resource.identity.output).properties.storageIOps, null)
+  value       = try(data.azapi_resource.identity.output.properties.storageIOps, null)
 }

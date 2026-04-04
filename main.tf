@@ -146,7 +146,7 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
 resource "azurerm_role_assignment" "sqlmi_system_assigned" {
   count = var.vulnerability_assessment == null ? 0 : 1
 
-  principal_id         = jsondecode(data.azapi_resource.identity.output).identity.principal_id
+  principal_id         = try(azurerm_mssql_managed_instance.this.identity[0].principal_id, null)
   scope                = var.storage_account_resource_id
   role_definition_name = "Storage Blob Data Contributor"
 }
