@@ -73,6 +73,31 @@ variable "collation" {
   description = "(Optional) Specifies how the SQL Managed Instance will be collated. Default value is `SQL_Latin1_General_CP1_CI_AS`. Changing this forces a new resource to be created."
 }
 
+variable "database_format" {
+  type        = string
+  default     = null
+  description = <<-DESCRIPTION
+(Optional) Specifies the internal format of instance databases specific to the SQL engine version. This controls which SQL engine features are available and is sometimes referred to as the "update policy".
+
+Possible values are:
+- `null` (default) - uses Azure's default database format
+- `"AlwaysUpToDate"` - always aligns with the latest SQL Server format, receiving new features as they become available
+- `"SQLServer2022"` - aligns with the SQL Server 2022 database engine
+- `"SQLServer2025"` - aligns with the SQL Server 2025 database engine (GA March 2026)
+
+Note: Downgrading to a lower format version is not supported once set.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/update-policy
+
+Defaults to `null`.
+DESCRIPTION
+
+  validation {
+    condition     = var.database_format == null || contains(["AlwaysUpToDate", "SQLServer2022", "SQLServer2025"], var.database_format)
+    error_message = "The database_format must be null, 'AlwaysUpToDate', 'SQLServer2022', or 'SQLServer2025'."
+  }
+}
+
 variable "dns_zone_partner_id" {
   type        = string
   default     = null
@@ -127,6 +152,30 @@ variable "minimum_tls_version" {
   type        = string
   default     = "1.2"
   description = "(Optional) The Minimum TLS Version. Default value is `1.2` Valid values include `1.0`, `1.1`, `1.2`."
+}
+
+variable "pricing_model" {
+  type        = string
+  default     = null
+  description = <<-DESCRIPTION
+(Optional) The pricing model of the SQL Managed Instance.
+
+Possible values are:
+- `null` (default) - uses Azure's default (`Regular`)
+- `"Regular"` - standard paid pricing
+- `"Freemium"` - Free SQL Managed Instance, available for the first 12 months after instance creation. Only one free instance is allowed per subscription. After 12 months, the instance is automatically converted to `Regular` pricing.
+
+The free offer is available in all regions and for all subscription types that support the paid offer.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/free-offer
+
+Defaults to `null`.
+DESCRIPTION
+
+  validation {
+    condition     = var.pricing_model == null || contains(["Regular", "Freemium"], var.pricing_model)
+    error_message = "The pricing_model must be null, 'Regular', or 'Freemium'."
+  }
 }
 
 variable "proxy_override" {

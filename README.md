@@ -167,6 +167,26 @@ Type: `string`
 
 Default: `null`
 
+### <a name="input_database_format"></a> [database\_format](#input\_database\_format)
+
+Description: (Optional) Specifies the internal format of instance databases specific to the SQL engine version. This controls which SQL engine features are available and is sometimes referred to as the "update policy".
+
+Possible values are:
+- `null` (default) - uses Azure's default database format
+- `"AlwaysUpToDate"` - always aligns with the latest SQL Server format, receiving new features as they become available
+- `"SQLServer2022"` - aligns with the SQL Server 2022 database engine
+- `"SQLServer2025"` - aligns with the SQL Server 2025 database engine (GA March 2026)
+
+Note: Downgrading to a lower format version is not supported once set.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/update-policy
+
+Defaults to `null`.
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_databases"></a> [databases](#input\_databases)
 
 Description: - `name` - (Required) The name of the Managed Database to create. Changing this forces a new resource to be created.
@@ -405,6 +425,25 @@ Description: (Optional) The Minimum TLS Version. Default value is `1.2` Valid va
 Type: `string`
 
 Default: `"1.2"`
+
+### <a name="input_pricing_model"></a> [pricing\_model](#input\_pricing\_model)
+
+Description: (Optional) The pricing model of the SQL Managed Instance.
+
+Possible values are:
+- `null` (default) - uses Azure's default (`Regular`)
+- `"Regular"` - standard paid pricing
+- `"Freemium"` - Free SQL Managed Instance, available for the first 12 months after instance creation. Only one free instance is allowed per subscription. After 12 months, the instance is automatically converted to `Regular` pricing.
+
+The free offer is available in all regions and for all subscription types that support the paid offer.
+
+See: https://learn.microsoft.com/en-us/azure/azure-sql/managed-instance/free-offer
+
+Defaults to `null`.
+
+Type: `string`
+
+Default: `null`
 
 ### <a name="input_private_endpoints"></a> [private\_endpoints](#input\_private\_endpoints)
 
@@ -801,6 +840,10 @@ Default: `true`
 
 The following outputs are exported:
 
+### <a name="output_database_format"></a> [database\_format](#output\_database\_format)
+
+Description: The internal format of instance databases reflecting the SQL engine version (update policy). Possible values are 'AlwaysUpToDate', 'SQLServer2022', or 'SQLServer2025'.
+
 ### <a name="output_identity"></a> [identity](#output\_identity)
 
 Description: Managed identities for the SQL MI instance.  This is not available from the `resource` output because AzureRM doesn't yet support adding both User and System Assigned identities.
@@ -812,6 +855,10 @@ Description: Whether the SQL Managed Instance is using the Next-gen General Purp
 ### <a name="output_memory_size_in_gb"></a> [memory\_size\_in\_gb](#output\_memory\_size\_in\_gb)
 
 Description: The actual memory size in GB allocated to the SQL Managed Instance.
+
+### <a name="output_pricing_model"></a> [pricing\_model](#output\_pricing\_model)
+
+Description: The pricing model of the SQL Managed Instance. Possible values are 'Regular' or 'Freemium'.
 
 ### <a name="output_private_endpoints"></a> [private\_endpoints](#output\_private\_endpoints)
 
