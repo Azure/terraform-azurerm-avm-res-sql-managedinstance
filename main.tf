@@ -146,9 +146,11 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
 resource "azurerm_role_assignment" "sqlmi_system_assigned" {
   count = var.vulnerability_assessment == null ? 0 : 1
 
-  principal_id         = try(azurerm_mssql_managed_instance.this.identity[0].principal_id, null)
+  principal_id         = data.azapi_resource.identity.output.identity.principalId
   scope                = var.storage_account_resource_id
   role_definition_name = "Storage Blob Data Contributor"
+
+  depends_on = [azapi_resource_action.sql_managed_instance_patch_identities]
 }
 
 # required AVM resources interfaces
