@@ -246,8 +246,8 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
 # `azapi_resource_action.sql_managed_instance_patch_identities`. This must remain a data source
 # (and cannot depend on the PATCH action) to avoid a cycle: the PATCH body consumes this value.
 data "azapi_resource" "identity" {
-  type                   = "Microsoft.Sql/managedInstances@2025-02-01-preview"
   resource_id            = azurerm_mssql_managed_instance.this.id
+  type                   = "Microsoft.Sql/managedInstances@2025-02-01-preview"
   response_export_values = ["properties.servicePrincipal"]
 }
 
