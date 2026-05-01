@@ -241,26 +241,23 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   ]
 }
 
-data "azurerm_resource_group" "parent" {
-  name = azurerm_mssql_managed_instance.this.resource_group_name
-}
-
+# Pre-PATCH read of the managed instance, used solely by `local.current_service_principal_enabled`
+# to detect an existing SystemAssigned service principal so it can be preserved in the body of
+# `azapi_resource_action.sql_managed_instance_patch_identities`. This must remain a data source
+# (and cannot depend on the PATCH action) to avoid a cycle: the PATCH body consumes this value.
 data "azapi_resource" "identity" {
-  name                   = azurerm_mssql_managed_instance.this.name
-  parent_id              = data.azurerm_resource_group.parent.id
   type                   = "Microsoft.Sql/managedInstances@2025-02-01-preview"
-  response_export_values = ["identity", "properties"]
+  resource_id            = azurerm_mssql_managed_instance.this.id
+  response_export_values = ["properties.servicePrincipal"]
 }
 
-# Performs a stateful GET of the managed instance after the identity PATCH (and ATP) actions
-# have run, persisting `identity` and `properties` in Terraform state.
-#
-# Module outputs (e.g. `identity`, `database_format`) reference this resource instead of the
-# `data.azapi_resource.identity` data source above. Data source values are re-read every apply
-# and therefore unknown at plan time, which causes downstream consumers (such as a
-# `Key Vault Crypto Service Encryption User` role assignment for TDE that uses the system
-# assigned identity's `principal_id`) to be planned for destroy + create on every run.
-# See: https://github.com/Azure/terraform-azurerm-avm-res-sql-managedinstance/issues
+# Stateful GET of the managed instance after the identity PATCH action runs. The captured
+# `identity` and `properties` are persisted in Terraform state and are therefore known at
+# plan time on subsequent runs. Module outputs (e.g. `identity`, `database_format`) read
+# from this resource rather than the data source above so that downstream consumers — such
+# as a `Key Vault Crypto Service Encryption User` role assignment for TDE that depends on
+# the system assigned identity's `principal_id` — are not planned for destroy + create on
+# every apply. `replace_triggered_by` re-fetches only when the PATCH action changes.
 resource "azapi_resource_action" "identity_read" {
   method                 = "GET"
   resource_id            = azurerm_mssql_managed_instance.this.id
@@ -271,8 +268,6 @@ resource "azapi_resource_action" "identity_read" {
     azapi_resource_action.sql_managed_instance_patch_identities,
   ]
 
-  # Re-fetch only when the identity-affecting patch action changes, keeping the cached
-  # identity/properties stable across runs so plan-time references remain known.
   lifecycle {
     replace_triggered_by = [
       azapi_resource_action.sql_managed_instance_patch_identities,
