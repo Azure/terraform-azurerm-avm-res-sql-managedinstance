@@ -38,6 +38,7 @@ The following requirements are needed by this module:
 
 The following resources are used by this module:
 
+- [azapi_resource_action.identity_read](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
 - [azapi_resource_action.mssql_managed_instance_security_alert_policy](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
 - [azapi_resource_action.mssql_managed_instance_vulnerability_assessment](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
 - [azapi_resource_action.sql_advanced_threat_protection](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
@@ -57,7 +58,6 @@ The following resources are used by this module:
 - [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
 - [azapi_client_config.telemetry](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
 - [azapi_resource.identity](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/resource) (data source)
-- [azurerm_resource_group.parent](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resource_group) (data source)
 - [modtm_module_source.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/data-sources/module_source) (data source)
 
 <!-- markdownlint-disable MD013 -->
@@ -846,7 +846,7 @@ Description: The internal format of instance databases reflecting the SQL engine
 
 ### <a name="output_identity"></a> [identity](#output\_identity)
 
-Description: Managed identities for the SQL MI instance.  This is not available from the `resource` output because AzureRM doesn't yet support adding both User and System Assigned identities.
+Description: Managed identities for the SQL MI instance.  This is not available from the `resource` output because AzureRM doesn't yet support adding both User and System Assigned identities. Sourced from a stateful AzAPI GET so the value is known at plan time on subsequent applies, preventing constant destroy/create churn for downstream resources (e.g. role assignments) that depend on `principal_id`.
 
 ### <a name="output_is_general_purpose_v2"></a> [is\_general\_purpose\_v2](#output\_is\_general\_purpose\_v2)
 
