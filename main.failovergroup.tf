@@ -15,6 +15,7 @@ resource "azurerm_mssql_managed_instance_failover_group" "this" {
       grace_minutes = read_write_endpoint_failover_policy.value.grace_minutes
     }
   }
+
   dynamic "timeouts" {
     for_each = each.value.timeouts == null ? [] : [each.value.timeouts]
 
@@ -26,4 +27,3 @@ resource "azurerm_mssql_managed_instance_failover_group" "this" {
     }
   }
 }
-
