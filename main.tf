@@ -32,6 +32,7 @@ resource "azurerm_mssql_managed_instance" "this" {
       tenant_id                           = azure_active_directory_administrator.value.tenant_id
     }
   }
+
   dynamic "timeouts" {
     for_each = var.timeouts == null ? [] : [var.timeouts]
 
@@ -264,15 +265,14 @@ resource "azapi_resource_action" "identity_read" {
   type                   = "Microsoft.Sql/managedInstances@2025-02-01-preview"
   response_export_values = ["identity", "properties"]
 
-  depends_on = [
-    azapi_resource_action.sql_managed_instance_patch_identities,
-  ]
-
   lifecycle {
     replace_triggered_by = [
       azapi_resource_action.sql_managed_instance_patch_identities,
     ]
   }
+  depends_on = [
+    azapi_resource_action.sql_managed_instance_patch_identities,
+  ]
 }
 
 resource "azapi_resource_action" "sql_advanced_threat_protection" {
@@ -327,6 +327,7 @@ resource "azurerm_monitor_diagnostic_setting" "this" {
       category_group = enabled_log.value
     }
   }
+
   dynamic "metric" {
     for_each = each.value.metric_categories
 
