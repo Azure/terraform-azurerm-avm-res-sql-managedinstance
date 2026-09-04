@@ -21,7 +21,6 @@ provider "azurerm" {
   }
 }
 
-
 ## Section to provide a random Azure region for the resource group
 # This allows us to randomize the region for the resource group.
 module "regions" {
@@ -34,6 +33,7 @@ resource "random_integer" "region_index" {
   max = length(module.regions.regions) - 1
   min = 0
 }
+
 ## End of section to provide a random Azure region for the resource group
 
 # This ensures we have unique CAF compliant names for our resources.
@@ -53,7 +53,6 @@ resource "azurerm_network_security_group" "this" {
   name                = "mi-security-group"
   resource_group_name = azurerm_resource_group.this.name
 }
-
 
 resource "azurerm_network_security_rule" "allow_management_inbound" {
   access                      = "Allow"
@@ -175,10 +174,10 @@ resource "azurerm_virtual_network" "this" {
 }
 
 resource "azurerm_subnet" "this" {
-  address_prefixes     = ["10.0.0.0/24"]
   name                 = "subnet-mi"
   resource_group_name  = azurerm_resource_group.this.name
   virtual_network_name = azurerm_virtual_network.this.name
+  address_prefixes     = ["10.0.0.0/24"]
 
   delegation {
     name = "managedinstancedelegation"
