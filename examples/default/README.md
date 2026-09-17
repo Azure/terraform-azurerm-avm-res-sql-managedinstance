@@ -243,6 +243,7 @@ module "sqlmi_test" {
   storage_size_in_gb           = 32
   subnet_id                    = azurerm_subnet.this.id
   vcores                       = "4"
+  enable_telemetry             = false
   managed_identities = {
     system_assigned            = true
     user_assigned_resource_ids = [azurerm_user_assigned_identity.uami.id]
