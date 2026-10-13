@@ -62,7 +62,7 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
 
   method      = "PUT"
   resource_id = "${azurerm_mssql_managed_instance.this.id}/securityAlertPolicies/Default"
-  type        = "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-08-01-preview"
+  type        = var.resource_types.sql_managed_instances_security_alert_policies
   body = {
     properties = {
       disabledAlerts          = try(var.security_alert_policy.disabled_alerts, [])
@@ -77,7 +77,7 @@ resource "azapi_resource_action" "mssql_managed_instance_security_alert_policy" 
   locks = [
     azurerm_mssql_managed_instance.this.id
   ]
-  retry = var.retry.mssql_managed_instance_security_alert_policy
+  retry = var.retry == null ? var.resource_retry.mssql_managed_instance_security_alert_policy : var.retry
 
   timeouts {
     create = var.timeout.mssql_managed_instance_security_alert_policy.create
@@ -120,7 +120,7 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
 
   method      = "PUT"
   resource_id = "${azurerm_mssql_managed_instance.this.id}/vulnerabilityAssessments/default"
-  type        = "Microsoft.Sql/managedInstances/vulnerabilityAssessments@2023-08-01-preview"
+  type        = var.resource_types.sql_managed_instances_vulnerability_assessments
   body = {
     properties = {
       storageAccountAccessKey = try(var.vulnerability_assessment.storage_account_access_key, null)
@@ -136,6 +136,7 @@ resource "azapi_resource_action" "mssql_managed_instance_vulnerability_assessmen
   locks = [
     azurerm_mssql_managed_instance.this.id
   ]
+  retry = var.retry
 
   depends_on = [
     azurerm_mssql_managed_instance_transparent_data_encryption.this,
@@ -183,7 +184,7 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
 
   method      = "PATCH"
   resource_id = azurerm_mssql_managed_instance.this.id
-  type        = "Microsoft.Sql/managedInstances@2025-02-01-preview"
+  type        = var.resource_types.sql_managed_instances
   body = jsondecode(jsonencode(merge(
     (var.managed_identities.system_assigned || length(var.managed_identities.user_assigned_resource_ids) > 0) ? {
       identity = merge(
@@ -228,7 +229,7 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
   locks = [
     azurerm_mssql_managed_instance.this.id
   ]
-  retry = var.retry.sql_managed_instance_patch_identities
+  retry = var.retry == null ? var.resource_retry.sql_managed_instance_patch_identities : var.retry
 
   timeouts {
     create = var.timeout.sql_managed_instance_patch_identities.create
@@ -248,7 +249,7 @@ resource "azapi_resource_action" "sql_managed_instance_patch_identities" {
 # (and cannot depend on the PATCH action) to avoid a cycle: the PATCH body consumes this value.
 data "azapi_resource" "identity" {
   resource_id            = azurerm_mssql_managed_instance.this.id
-  type                   = "Microsoft.Sql/managedInstances@2025-02-01-preview"
+  type                   = var.resource_types.sql_managed_instances
   response_export_values = ["properties.servicePrincipal"]
 }
 
@@ -262,8 +263,9 @@ data "azapi_resource" "identity" {
 resource "azapi_resource_action" "identity_read" {
   method                 = "GET"
   resource_id            = azurerm_mssql_managed_instance.this.id
-  type                   = "Microsoft.Sql/managedInstances@2025-02-01-preview"
+  type                   = var.resource_types.sql_managed_instances
   response_export_values = ["identity", "properties"]
+  retry                  = var.retry
 
   lifecycle {
     replace_triggered_by = [
@@ -278,7 +280,7 @@ resource "azapi_resource_action" "identity_read" {
 resource "azapi_resource_action" "sql_advanced_threat_protection" {
   method      = "PUT"
   resource_id = "${azurerm_mssql_managed_instance.this.id}/advancedThreatProtectionSettings/Default"
-  type        = "Microsoft.Sql/managedInstances/advancedThreatProtectionSettings@2023-08-01-preview"
+  type        = var.resource_types.sql_managed_instances_advanced_threat_protection_settings
   body = {
     properties = {
       state = var.advanced_threat_protection_enabled ? "Enabled" : "Disabled"
@@ -287,7 +289,7 @@ resource "azapi_resource_action" "sql_advanced_threat_protection" {
   locks = [
     azurerm_mssql_managed_instance.this.id
   ]
-  retry = var.retry.sql_advanced_threat_protection
+  retry = var.retry == null ? var.resource_retry.sql_advanced_threat_protection : var.retry
 
   timeouts {
     create = var.timeout.sql_advanced_threat_protection.create

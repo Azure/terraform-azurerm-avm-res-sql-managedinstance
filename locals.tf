@@ -20,5 +20,24 @@ locals {
       }
     ]
   ]) : "${assoc.pe_key}-${assoc.asg_key}" => assoc }
+  private_endpoint_locks = {
+    for key, endpoint in var.private_endpoints : key => endpoint.lock == null ? (
+      var.lock == null ? null : {
+        kind  = var.lock.kind
+        name  = var.lock.name
+        notes = null
+      }
+    ) : (endpoint.lock.kind == "None" ? null : endpoint.lock)
+  }
+  private_endpoint_role_assignments = {
+    for assignment in flatten([
+      for endpoint_key, endpoint in var.private_endpoints : [
+        for assignment_key, _ in endpoint.role_assignments : {
+          endpoint_key   = endpoint_key
+          assignment_key = assignment_key
+        }
+      ]
+    ]) : jsonencode([assignment.endpoint_key, assignment.assignment_key]) => assignment
+  }
   role_definition_resource_substring = "/providers/Microsoft.Authorization/roleDefinitions"
 }
