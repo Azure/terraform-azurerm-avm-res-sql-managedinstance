@@ -11,6 +11,11 @@ The module supports the following capabilities:
 * Vulnerability Assessments & Security Access Policies with a restricted storage account (supplied via `storage_account_resource_id`)
 * Configuration for a failover group
 * A map of databases, along with support for all parameters, such as long term backup retention policies.
+* Private endpoints with DNS-zone integration, application security group associations, locks, and role assignments.
+
+Private endpoints retain their existing Terraform addresses and naming defaults. Locks and role assignments supplied under `private_endpoints` are now applied. Omitted endpoint locks inherit `lock`; use `lock = { kind = "None" }` on an endpoint to opt out. Endpoint subresource and IP member names accept only `managedInstance`, including when omitted.
+
+The previous resource-specific `retry` input is now named `resource_retry`; rename that argument when upgrading. The standard `retry` input configures shared AzAPI retries. Existing SQL API versions and resource-specific retry defaults are unchanged.
 
 > [!IMPORTANT]
 > As the overall AVM framework is not GA (generally available) yet - the CI framework and test automation is not fully functional and implemented across all supported languages yet - breaking changes are expected, and additional customer feedback is yet to be gathered and incorporated. Hence, modules **MUST NOT** be published at version `1.0.0` or higher at this time.
@@ -38,6 +43,8 @@ The following requirements are needed by this module:
 
 The following resources are used by this module:
 
+- [azapi_resource.private_endpoint_locks](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource.private_endpoint_role_assignments](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
 - [azapi_resource_action.identity_read](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
 - [azapi_resource_action.mssql_managed_instance_security_alert_policy](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
 - [azapi_resource_action.mssql_managed_instance_vulnerability_assessment](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
@@ -337,6 +344,24 @@ map(object({
 
 Default: `{}`
 
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: Body-relative paths to ignore on private endpoint extension resources. Paths use dot notation. Ignored configuration is not sent to Azure until the path is removed, and changes take effect only after apply. Non-empty values require Terraform 1.11 or later.
+
+- `authorization_locks` - Paths ignored on private endpoint locks.
+- `authorization_role_assignments` - Paths ignored on private endpoint role assignments.
+
+Type:
+
+```hcl
+object({
+    authorization_locks            = optional(list(string), [])
+    authorization_role_assignments = optional(list(string), [])
+  })
+```
+
+Default: `{}`
+
 ### <a name="input_is_general_purpose_v2"></a> [is\_general\_purpose\_v2](#input\_is\_general\_purpose\_v2)
 
 Description: (Optional) Whether or not this is a GPv2 (Next-gen General Purpose) variant of General Purpose edition.
@@ -447,23 +472,37 @@ Default: `null`
 
 ### <a name="input_private_endpoints"></a> [private\_endpoints](#input\_private\_endpoints)
 
-Description: A map of private endpoints to create on this resource. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
+Description: A map of private endpoints to create on the SQL Managed Instance. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
 
 - `name` - (Optional) The name of the private endpoint. One will be generated if not set.
 - `role_assignments` - (Optional) A map of role assignments to create on the private endpoint. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time. See `var.role_assignments` for more information.
-- `lock` - (Optional) The lock level to apply to the private endpoint. Default is `None`. Possible values are `None`, `CanNotDelete`, and `ReadOnly`.
+  - `name` - (Optional) The name of the role assignment. If not set, a random UUID will be generated. Changing this forces the creation of a new resource.
+  - `role_definition_id_or_name` - The ID or name of the role definition to assign to the principal.
+  - `principal_id` - The ID of the principal to assign the role to.
+  - `description` - (Optional) The description of the role assignment.
+  - `skip_service_principal_aad_check` - (Optional) Retained for interface compatibility. AzAPI does not perform an Azure Active Directory lookup, so this has no effect.
+  - `condition` - (Optional) The condition which will be used to scope the role assignment.
+  - `condition_version` - (Optional) The version of the condition syntax. Leave as `null` if you are not using a condition, if you are then valid values are '2.0'.
+  - `delegated_managed_identity_resource_id` - (Optional) The delegated Azure Resource Id which contains a Managed Identity. Changing this forces a new resource to be created. This field is only used in cross-tenant scenario.
+  - `principal_type` - (Optional) The type of the `principal_id`. Possible values are `User`, `Group` and `ServicePrincipal`. It is necessary to explicitly set this attribute when creating role assignments if the principal creating the assignment is constrained by ABAC rules that filters on the PrincipalType attribute.
+- `lock` - (Optional) The lock level to apply to the private endpoint. Defaults to `var.lock`. Set `kind` to `None` to disable an inherited lock.
+  - `kind` - (Required) The type of lock. Possible values are `None`, `CanNotDelete`, and `ReadOnly`.
+  - `name` - (Optional) The name of the lock. If not specified, a name will be generated based on the `kind` value. Changing this forces the creation of a new resource.
+  - `notes` - (Optional) Notes about the lock. This value maps to `Microsoft.Authorization/locks.properties.notes`.
 - `tags` - (Optional) A mapping of tags to assign to the private endpoint.
 - `subnet_resource_id` - The resource ID of the subnet to deploy the private endpoint in.
+- `subresource_name` - (Optional) The private endpoint subresource. Only `managedInstance` is supported; omitted or null values use `managedInstance`.
 - `private_dns_zone_group_name` - (Optional) The name of the private DNS zone group. One will be generated if not set.
 - `private_dns_zone_resource_ids` - (Optional) A set of resource IDs of private DNS zones to associate with the private endpoint. If not set, no zone groups will be created and the private endpoint will not be associated with any private DNS zones. DNS records must be managed external to this module.
-- `application_security_group_resource_ids` - (Optional) A map of resource IDs of application security groups to associate with the private endpoint. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
+- `application_security_group_associations` - (Optional) A map of resource IDs of application security groups to associate with the private endpoint. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
 - `private_service_connection_name` - (Optional) The name of the private service connection. One will be generated if not set.
 - `network_interface_name` - (Optional) The name of the network interface. One will be generated if not set.
-- `location` - (Optional) The Azure location where the resources will be deployed. Defaults to the location of the resource group.
-- `resource_group_name` - (Optional) The resource group where the resources will be deployed. Defaults to the resource group of this resource.
+- `location` - (Optional) The Azure location where the resources will be deployed. Defaults to `var.location`.
+- `resource_group_name` - (Optional) The resource group name where the private endpoint resources will be deployed. Defaults to `var.resource_group_name`.
 - `ip_configurations` - (Optional) A map of IP configurations to create on the private endpoint. If not specified the platform will create one. The map key is deliberately arbitrary to avoid issues where map keys maybe unknown at plan time.
   - `name` - The name of the IP configuration.
   - `private_ip_address` - The private IP address of the IP configuration.
+  - `member_name` - (Optional) The private IP configuration member name. Only `managedInstance` is supported; omitted or null values use `managedInstance`.
 
 Type:
 
@@ -471,6 +510,7 @@ Type:
 map(object({
     name = optional(string, null)
     role_assignments = optional(map(object({
+      name                                   = optional(string, null)
       role_definition_id_or_name             = string
       principal_id                           = string
       description                            = optional(string, null)
@@ -481,11 +521,13 @@ map(object({
       principal_type                         = optional(string, null)
     })), {})
     lock = optional(object({
-      kind = string
-      name = optional(string, null)
+      kind  = string
+      name  = optional(string, null)
+      notes = optional(string, null)
     }), null)
     tags                                    = optional(map(string), null)
     subnet_resource_id                      = string
+    subresource_name                        = optional(string, null)
     private_dns_zone_group_name             = optional(string, "default")
     private_dns_zone_resource_ids           = optional(set(string), [])
     application_security_group_associations = optional(map(string), {})
@@ -496,6 +538,7 @@ map(object({
     ip_configurations = optional(map(object({
       name               = string
       private_ip_address = string
+      member_name        = optional(string)
     })), {})
   }))
 ```
@@ -526,10 +569,9 @@ Type: `bool`
 
 Default: `null`
 
-### <a name="input_retry"></a> [retry](#input\_retry)
+### <a name="input_resource_retry"></a> [resource\_retry](#input\_resource\_retry)
 
-Description: The AzAPI resource retry configuration, per resource type.  
-Will retry up to the resource timeout, see `var.timeout`.
+Description: Resource-specific AzAPI retry configuration used when the shared `retry` input is null. Requests retry up to the corresponding resource timeout in `var.timeout`.
 
 Each resource has the following attributes:
 
@@ -564,6 +606,52 @@ object({
 ```
 
 Default: `{}`
+
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: AzAPI resource types and API versions used by the module. Existing SQL API-version defaults are retained.
+
+- `authorization_locks` - Private endpoint locks.
+- `authorization_role_assignments` - Private endpoint role assignments.
+- `sql_managed_instances` - Managed instance identity and feature actions and reads.
+- `sql_managed_instances_advanced_threat_protection_settings` - Advanced Threat Protection settings.
+- `sql_managed_instances_security_alert_policies` - Security alert policies.
+- `sql_managed_instances_vulnerability_assessments` - Vulnerability assessments.
+
+Type:
+
+```hcl
+object({
+    authorization_locks                                       = optional(string, "Microsoft.Authorization/locks@2020-05-01")
+    authorization_role_assignments                            = optional(string, "Microsoft.Authorization/roleAssignments@2022-04-01")
+    sql_managed_instances                                     = optional(string, "Microsoft.Sql/managedInstances@2025-02-01-preview")
+    sql_managed_instances_advanced_threat_protection_settings = optional(string, "Microsoft.Sql/managedInstances/advancedThreatProtectionSettings@2023-08-01-preview")
+    sql_managed_instances_security_alert_policies             = optional(string, "Microsoft.Sql/managedInstances/securityAlertPolicies@2023-08-01-preview")
+    sql_managed_instances_vulnerability_assessments           = optional(string, "Microsoft.Sql/managedInstances/vulnerabilityAssessments@2023-08-01-preview")
+  })
+```
+
+Default: `{}`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: Shared retry configuration for AzAPI resources. Defaults to null. When set, it overrides the resource-specific `resource_retry` settings.
+
+- `error_message_regex` - Error patterns that trigger a retry.
+- `interval_seconds` - Initial interval between retries in seconds.
+- `max_interval_seconds` - Maximum interval between retries in seconds.
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+```
+
+Default: `null`
 
 ### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
 
@@ -731,10 +819,12 @@ Default: `{}`
 
 ### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
 
-Description: - `create` - (Defaults to 24 hours) Used when creating the Microsoft SQL Managed Instance.
-- `delete` - (Defaults to 24 hours) Used when deleting the Microsoft SQL Managed Instance.
-- `read` - (Defaults to 5 minutes) Used when retrieving the Microsoft SQL Managed Instance.
-- `update` - (Defaults to 24 hours) Used when updating the Microsoft SQL Managed Instance.
+Description: Per-operation timeouts for the SQL Managed Instance and private endpoint locks and role assignments. Omitted values use each provider's defaults.
+
+ - `create` - (Defaults to 24 hours) Used when creating the Microsoft SQL Managed Instance.
+ - `delete` - (Defaults to 24 hours) Used when deleting the Microsoft SQL Managed Instance.
+ - `read` - (Defaults to 5 minutes) Used when retrieving the Microsoft SQL Managed Instance.
+ - `update` - (Defaults to 24 hours) Used when updating the Microsoft SQL Managed Instance.
 
 Type:
 
@@ -882,7 +972,13 @@ Description: The actual storage IOPS allocated to the SQL Managed Instance.
 
 ## Modules
 
-No modules.
+The following Modules are called:
+
+### <a name="module_private_endpoint_interfaces"></a> [private\_endpoint\_interfaces](#module\_private\_endpoint\_interfaces)
+
+Source: Azure/avm-utl-interfaces/azure
+
+Version: 0.7.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

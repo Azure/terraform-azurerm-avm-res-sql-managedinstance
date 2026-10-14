@@ -12,7 +12,7 @@ resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
     is_manual_connection           = false
     name                           = each.value.private_service_connection_name != null ? each.value.private_service_connection_name : "pse-${var.name}"
     private_connection_resource_id = azurerm_mssql_managed_instance.this.id
-    subresource_names              = ["managedInstance"]
+    subresource_names              = [coalesce(each.value.subresource_name, "managedInstance")]
   }
 
   dynamic "ip_configuration" {
@@ -21,8 +21,8 @@ resource "azurerm_private_endpoint" "this_managed_dns_zone_groups" {
     content {
       name               = ip_configuration.value.name
       private_ip_address = ip_configuration.value.private_ip_address
-      member_name        = "managedInstance"
-      subresource_name   = "managedInstance"
+      member_name        = coalesce(ip_configuration.value.member_name, "managedInstance")
+      subresource_name   = coalesce(each.value.subresource_name, "managedInstance")
     }
   }
 
@@ -53,7 +53,7 @@ resource "azurerm_private_endpoint" "this_unmanaged_dns_zone_groups" {
     is_manual_connection           = false
     name                           = each.value.private_service_connection_name != null ? each.value.private_service_connection_name : "pse-${var.name}"
     private_connection_resource_id = azurerm_mssql_managed_instance.this.id
-    subresource_names              = ["managedInstance"]
+    subresource_names              = [coalesce(each.value.subresource_name, "managedInstance")]
   }
 
   dynamic "ip_configuration" {
@@ -62,8 +62,8 @@ resource "azurerm_private_endpoint" "this_unmanaged_dns_zone_groups" {
     content {
       name               = ip_configuration.value.name
       private_ip_address = ip_configuration.value.private_ip_address
-      member_name        = "managedInstance"
-      subresource_name   = "managedInstance"
+      member_name        = coalesce(ip_configuration.value.member_name, "managedInstance")
+      subresource_name   = coalesce(each.value.subresource_name, "managedInstance")
     }
   }
 
@@ -77,4 +77,77 @@ resource "azurerm_private_endpoint_application_security_group_association" "this
 
   application_security_group_id = each.value.asg_resource_id
   private_endpoint_id           = var.private_endpoints_manage_dns_zone_group ? azurerm_private_endpoint.this_managed_dns_zone_groups[each.value.pe_key].id : azurerm_private_endpoint.this_unmanaged_dns_zone_groups[each.value.pe_key].id
+}
+
+module "private_endpoint_interfaces" {
+  source   = "Azure/avm-utl-interfaces/azure"
+  version  = "0.7.0"
+  for_each = var.private_endpoints
+
+  enable_telemetry = var.enable_telemetry
+  private_endpoints = {
+    this = merge(each.value, {
+      lock             = local.private_endpoint_locks[each.key]
+      subresource_name = coalesce(each.value.subresource_name, "managedInstance")
+    })
+  }
+  private_endpoints_manage_dns_zone_group = var.private_endpoints_manage_dns_zone_group
+  private_endpoints_scope                 = azurerm_mssql_managed_instance.this.id
+  role_assignment_definition_scope        = azurerm_mssql_managed_instance.this.id
+}
+
+resource "azapi_resource" "private_endpoint_role_assignments" {
+  for_each = local.private_endpoint_role_assignments
+
+  name                = module.private_endpoint_interfaces[each.value.endpoint_key].role_assignments_private_endpoint_azapi["this-${each.value.assignment_key}"].name
+  parent_id           = var.private_endpoints_manage_dns_zone_group ? azurerm_private_endpoint.this_managed_dns_zone_groups[each.value.endpoint_key].id : azurerm_private_endpoint.this_unmanaged_dns_zone_groups[each.value.endpoint_key].id
+  type                = var.resource_types.authorization_role_assignments
+  body                = module.private_endpoint_interfaces[each.value.endpoint_key].role_assignments_private_endpoint_azapi["this-${each.value.assignment_key}"].body
+  ignore_body_changes = length(var.ignore_body_changes.authorization_role_assignments) > 0 ? var.ignore_body_changes.authorization_role_assignments : null
+  replace_triggers_refs = [
+    "properties.principalId",
+    "properties.roleDefinitionId",
+    "properties.delegatedManagedIdentityResourceId",
+  ]
+  response_export_values = []
+  retry                  = var.retry
+
+  dynamic "timeouts" {
+    for_each = var.timeouts == null ? [] : [var.timeouts]
+
+    content {
+      create = timeouts.value.create
+      delete = timeouts.value.delete
+      read   = timeouts.value.read
+      update = timeouts.value.update
+    }
+  }
+}
+
+resource "azapi_resource" "private_endpoint_locks" {
+  for_each = { for key, lock in local.private_endpoint_locks : key => lock if lock != null }
+
+  name                   = coalesce(each.value.name, "lock-${each.value.kind}")
+  parent_id              = var.private_endpoints_manage_dns_zone_group ? azurerm_private_endpoint.this_managed_dns_zone_groups[each.key].id : azurerm_private_endpoint.this_unmanaged_dns_zone_groups[each.key].id
+  type                   = var.resource_types.authorization_locks
+  body                   = module.private_endpoint_interfaces[each.key].lock_private_endpoint_azapi.this.body
+  ignore_body_changes    = length(var.ignore_body_changes.authorization_locks) > 0 ? var.ignore_body_changes.authorization_locks : null
+  response_export_values = []
+  retry                  = var.retry
+
+  dynamic "timeouts" {
+    for_each = var.timeouts == null ? [] : [var.timeouts]
+
+    content {
+      create = timeouts.value.create
+      delete = timeouts.value.delete
+      read   = timeouts.value.read
+      update = timeouts.value.update
+    }
+  }
+
+  depends_on = [
+    azapi_resource.private_endpoint_role_assignments,
+    azurerm_private_endpoint_application_security_group_association.this,
+  ]
 }

@@ -290,6 +290,8 @@ variable "timeouts" {
   })
   default     = null
   description = <<-DESCRIPTION
+Per-operation timeouts for the SQL Managed Instance and private endpoint locks and role assignments. Omitted values use each provider's defaults.
+
  - `create` - (Defaults to 24 hours) Used when creating the Microsoft SQL Managed Instance.
  - `delete` - (Defaults to 24 hours) Used when deleting the Microsoft SQL Managed Instance.
  - `read` - (Defaults to 5 minutes) Used when retrieving the Microsoft SQL Managed Instance.

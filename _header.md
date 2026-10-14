@@ -9,6 +9,11 @@ The module supports the following capabilities:
 * Vulnerability Assessments & Security Access Policies with a restricted storage account (supplied via `storage_account_resource_id`)
 * Configuration for a failover group
 * A map of databases, along with support for all parameters, such as long term backup retention policies.
+* Private endpoints with DNS-zone integration, application security group associations, locks, and role assignments.
+
+Private endpoints retain their existing Terraform addresses and naming defaults. Locks and role assignments supplied under `private_endpoints` are now applied. Omitted endpoint locks inherit `lock`; use `lock = { kind = "None" }` on an endpoint to opt out. Endpoint subresource and IP member names accept only `managedInstance`, including when omitted.
+
+The previous resource-specific `retry` input is now named `resource_retry`; rename that argument when upgrading. The standard `retry` input configures shared AzAPI retries. Existing SQL API versions and resource-specific retry defaults are unchanged.
 
 > [!IMPORTANT]
 > As the overall AVM framework is not GA (generally available) yet - the CI framework and test automation is not fully functional and implemented across all supported languages yet - breaking changes are expected, and additional customer feedback is yet to be gathered and incorporated. Hence, modules **MUST NOT** be published at version `1.0.0` or higher at this time.
