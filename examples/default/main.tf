@@ -2,6 +2,10 @@ terraform {
   required_version = ">= 1.9, < 2.0"
 
   required_providers {
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.12"
+    }
     azurerm = {
       source  = "hashicorp/azurerm"
       version = ">= 4.0.0, < 5.0.0"
@@ -38,8 +42,8 @@ resource "random_integer" "region_index" {
 
 # This ensures we have unique CAF compliant names for our resources.
 module "naming" {
-  source  = "Azure/naming/azurerm"
-  version = "0.4.2"
+  source  = "Azure/avm-utl-naming/azure"
+  version = "0.2.0"
 }
 
 # This is required for resource modules
@@ -225,6 +229,9 @@ resource "azurerm_user_assigned_identity" "uami" {
 # This is the module call
 module "sqlmi_test" {
   source = "../../"
+  providers = {
+    azapi = azapi
+  }
 
   administrator_login          = "myspecialsqladmin"
   administrator_login_password = random_password.myadminpassword.result

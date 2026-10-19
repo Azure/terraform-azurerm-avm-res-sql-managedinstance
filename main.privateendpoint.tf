@@ -81,9 +81,10 @@ resource "azurerm_private_endpoint_application_security_group_association" "this
 
 module "private_endpoint_interfaces" {
   source   = "Azure/avm-utl-interfaces/azure"
-  version  = "0.7.0"
+  version  = "0.9.0"
   for_each = var.private_endpoints
 
+  location         = var.location
   enable_telemetry = var.enable_telemetry
   private_endpoints = {
     this = merge(each.value, {
