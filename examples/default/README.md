@@ -9,6 +9,7 @@ terraform {
   required_version = ">= 1.9, < 2.0"
 
   required_providers {
+    # tflint-ignore: terraform_unused_required_providers
     azapi = {
       source  = "Azure/azapi"
       version = "~> 2.12"
@@ -236,9 +237,6 @@ resource "azurerm_user_assigned_identity" "uami" {
 # This is the module call
 module "sqlmi_test" {
   source = "../../"
-  providers = {
-    azapi = azapi
-  }
 
   administrator_login          = "myspecialsqladmin"
   administrator_login_password = random_password.myadminpassword.result
