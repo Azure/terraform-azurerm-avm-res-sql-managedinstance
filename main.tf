@@ -11,6 +11,7 @@ resource "azurerm_mssql_managed_instance" "this" {
   administrator_login_password   = var.administrator_login_password
   collation                      = var.collation
   dns_zone_partner_id            = var.dns_zone_partner_id
+  general_purpose_v2_enabled     = var.is_general_purpose_v2
   maintenance_configuration_name = var.maintenance_configuration_name
   minimum_tls_version            = var.minimum_tls_version
   proxy_override                 = var.proxy_override
