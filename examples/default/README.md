@@ -33,20 +33,10 @@ provider "azurerm" {
   }
 }
 
-## Section to provide a random Azure region for the resource group
-# This allows us to randomize the region for the resource group.
-module "regions" {
-  source  = "Azure/regions/azurerm"
-  version = "0.8.2"
-}
-
-# This allows us to randomize the region for the resource group.
 resource "random_integer" "region_index" {
-  max = length(module.regions.regions) - 1
+  max = length(local.regions) - 1
   min = 0
 }
-
-## End of section to provide a random Azure region for the resource group
 
 # This ensures we have unique CAF compliant names for our resources.
 module "naming" {
@@ -56,7 +46,7 @@ module "naming" {
 
 # This is required for resource modules
 resource "azurerm_resource_group" "this" {
-  location = "westus2"
+  location = local.regions[random_integer.region_index.result]
   name     = module.naming.resource_group.name_unique
 }
 
@@ -331,12 +321,6 @@ The following Modules are called:
 Source: Azure/avm-utl-naming/azure
 
 Version: 0.2.0
-
-### <a name="module_regions"></a> [regions](#module\_regions)
-
-Source: Azure/regions/azurerm
-
-Version: 0.8.2
 
 ### <a name="module_sqlmi_test"></a> [sqlmi\_test](#module\_sqlmi\_test)
 
