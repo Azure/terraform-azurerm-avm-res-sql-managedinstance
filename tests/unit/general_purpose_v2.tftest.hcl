@@ -65,6 +65,12 @@ variables {
 
 run "general_purpose_v2_disabled_by_default" {
   command = plan
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+
+    random = random
+  }
 
   assert {
     condition     = azurerm_mssql_managed_instance.this.general_purpose_v2_enabled == false
@@ -74,6 +80,12 @@ run "general_purpose_v2_disabled_by_default" {
 
 run "general_purpose_v2_set_on_create" {
   command = plan
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+
+    random = random
+  }
 
   variables {
     is_general_purpose_v2 = true
